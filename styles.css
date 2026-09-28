@@ -1,0 +1,28 @@
+:root { color-scheme: light; --ink: #1b2926; --muted: #61706b; --paper: #f7f6f2; --line: #d8ddd7; --accent: #cae3ae; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
+.page { width: min(100% - 48px, 1160px); margin: 0 auto; }
+.topline { height: 8px; background: var(--ink); }
+.site-header { display: flex; align-items: center; gap: 12px; padding: 28px 0; border-bottom: 1px solid var(--line); }
+.mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--accent); font-size: 24px; line-height: 1; }
+.site-name, .eyebrow, .card-number, .status, .hero-rule, footer { letter-spacing: .08em; }
+.site-name { font-size: 13px; font-weight: 800; }
+.status { margin-left: auto; display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 650; color: var(--muted); }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: #84aa64; }
+.hero { padding: clamp(90px, 13vw, 170px) 0 72px; }
+.eyebrow { margin: 0 0 25px; color: var(--muted); font-size: 11px; font-weight: 800; }
+h1 { margin: 0; font-size: clamp(45px, 7.2vw, 94px); line-height: 1.16; letter-spacing: -.075em; font-weight: 740; }
+h1 em { font-style: normal; color: #687a6f; }
+.intro { margin: 38px 0 0; color: var(--muted); font-size: clamp(15px, 1.5vw, 18px); line-height: 1.9; word-break: keep-all; }
+.hero-rule { display: flex; justify-content: space-between; margin-top: clamp(84px, 12vw, 152px); padding-bottom: 18px; border-bottom: 1px solid var(--ink); font-size: 11px; font-weight: 700; }
+.hero-rule span:last-child { font-size: 22px; line-height: .6; }
+.next { padding: 72px 0 124px; }
+.section-heading h2 { margin: 0 0 34px; font-size: clamp(26px, 3vw, 38px); letter-spacing: -.055em; }
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.card { min-height: 214px; padding: 27px; border: 1px solid var(--line); background: #fffefa; }
+.card-number { color: #6b8c5e; font-size: 11px; font-weight: 800; }
+.card h3 { margin: 30px 0 12px; font-size: 21px; letter-spacing: -.04em; }
+.card p { max-width: 230px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.7; word-break: keep-all; }
+footer { display: flex; justify-content: space-between; padding: 25px 0 36px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+@media (max-width: 640px) { .page { width: min(100% - 32px, 1160px); } .site-header { padding: 20px 0; } .hero { padding: 92px 0 56px; } .intro br { display: none; } .cards { grid-template-columns: 1fr; } .card { min-height: 165px; } .card h3 { margin-top: 22px; } .next { padding: 58px 0 86px; } }

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f6f2" />
+    <meta name="description" content="새로운 웹사이트를 함께 기획하고 만들어가는 공간입니다." />
+    <title>새로운 웹사이트</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <div class="topline" aria-hidden="true"></div>
+      <header class="site-header">
+        <span class="mark" aria-hidden="true">✳</span>
+        <span class="site-name">NEW SITE</span>
+        <span class="status"><span class="status-dot"></span> 기획 중</span>
+      </header>
+
+      <section class="hero" aria-labelledby="hero-title">
+        <p class="eyebrow">A NEW SPACE ON THE WEB</p>
+        <h1 id="hero-title">새로운 웹사이트를<br /><em>만들고 있습니다.</em></h1>
+        <p class="intro">
+          이곳은 아이디어가 웹사이트가 되는 출발점입니다.<br />
+          목적과 내용, 디자인을 함께 정하며 하나씩 채워갈 예정입니다.
+        </p>
+        <div class="hero-rule" aria-hidden="true"><span>01 / START</span><span>↘</span></div>
+      </section>
+
+      <section class="next" aria-labelledby="next-title">
+        <div class="section-heading">
+          <p class="eyebrow">WHAT COMES NEXT</p>
+          <h2 id="next-title">앞으로 정할 것들</h2>
+        </div>
+        <div class="cards">
+          <article class="card"><span class="card-number">01</span><h3>목적</h3><p>누구를 위한 사이트인지, 어떤 경험을 줄지 정합니다.</p></article>
+          <article class="card"><span class="card-number">02</span><h3>내용</h3><p>필요한 페이지와 보여줄 이야기를 구성합니다.</p></article>
+          <article class="card"><span class="card-number">03</span><h3>디자인</h3><p>사이트의 분위기와 화면 구성을 함께 다듬습니다.</p></article>
+        </div>
+      </section>
+
+      <footer><span>첫 페이지, 첫 걸음.</span><span>© <span id="year"></span></span></footer>
+    </main>
+    <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+  </body>
+</html>
