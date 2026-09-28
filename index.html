@@ -1,46 +1,87 @@
 <!doctype html>
 <html lang="ko">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#f7f6f2" />
-    <meta name="description" content="새로운 웹사이트를 함께 기획하고 만들어가는 공간입니다." />
-    <title>새로운 웹사이트</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <main class="page">
-      <div class="topline" aria-hidden="true"></div>
-      <header class="site-header">
-        <span class="mark" aria-hidden="true">✳</span>
-        <span class="site-name">NEW SITE</span>
-        <span class="status"><span class="status-dot"></span> 기획 중</span>
-      </header>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#faf7f1">
+  <meta name="description" content="내 옷 사진으로 이불 속에서 내일의 코디를 고르는 온라인 옷장">
+  <title>누워서 옷장 — 내일 뭐 입지?</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <a class="brand" href="#top" aria-label="누워서 옷장 홈"><span class="brand-mark">✳</span><span>누워서 옷장<small>내일 뭐 입지?</small></span></a>
+      <div class="header-actions"><span id="sync-status" class="sync-status">이 기기에 저장 중</span><button id="open-wardrobe" class="header-closet" type="button">내 옷장 <span aria-hidden="true">↗</span></button></div>
+    </header>
 
-      <section class="hero" aria-labelledby="hero-title">
-        <p class="eyebrow">A NEW SPACE ON THE WEB</p>
-        <h1 id="hero-title">새로운 웹사이트를<br /><em>만들고 있습니다.</em></h1>
-        <p class="intro">
-          이곳은 아이디어가 웹사이트가 되는 출발점입니다.<br />
-          목적과 내용, 디자인을 함께 정하며 하나씩 채워갈 예정입니다.
-        </p>
-        <div class="hero-rule" aria-hidden="true"><span>01 / START</span><span>↘</span></div>
-      </section>
+    <div id="top" class="layout">
+      <aside id="wardrobe" class="wardrobe" aria-label="내 옷장">
+        <div class="wardrobe-head"><div><span class="eyebrow">MY LITTLE CLOSET</span><h2>내 옷장 <span id="garment-count">0</span></h2></div><button id="close-wardrobe" class="close-wardrobe" type="button" aria-label="옷장 닫기">×</button></div>
+        <p class="wardrobe-intro">옷 사진을 모아두고 코디에 쏙 넣어보세요.</p>
+        <button id="add-garment" class="add-button" type="button"><span aria-hidden="true">＋</span> 내 옷 추가하기</button>
+        <div id="category-filters" class="filters" aria-label="옷 종류"></div>
+        <div id="garment-grid" class="garment-grid"></div>
+        <p class="wardrobe-footnote">옷을 누르면 가운데 사람에게 입힐 수 있어요.</p>
+      </aside>
 
-      <section class="next" aria-labelledby="next-title">
-        <div class="section-heading">
-          <p class="eyebrow">WHAT COMES NEXT</p>
-          <h2 id="next-title">앞으로 정할 것들</h2>
-        </div>
-        <div class="cards">
-          <article class="card"><span class="card-number">01</span><h3>목적</h3><p>누구를 위한 사이트인지, 어떤 경험을 줄지 정합니다.</p></article>
-          <article class="card"><span class="card-number">02</span><h3>내용</h3><p>필요한 페이지와 보여줄 이야기를 구성합니다.</p></article>
-          <article class="card"><span class="card-number">03</span><h3>디자인</h3><p>사이트의 분위기와 화면 구성을 함께 다듬습니다.</p></article>
-        </div>
-      </section>
+      <main class="main">
+        <div class="intro"><div><span class="eyebrow">DRESS UP WITHOUT GETTING UP</span><h1>이불 속에서 <em>내일의 나</em> 꾸미기</h1><p>옷장을 열고 마음 가는 대로 입혀보세요. 내일 아침이 조금 더 가벼워질 거예요.</p></div><span class="intro-star" aria-hidden="true">✦</span></div>
+        <section class="stage-section" aria-label="코디 미리보기">
+          <div class="stage-top"><span class="stage-label"><span class="live-dot"></span> FITTING ROOM</span><span class="stage-tip">옷을 고르면 여기에 나타나요</span></div>
+          <div id="stage" class="stage">
+            <div class="stage-orbit orbit-one"></div><div class="stage-orbit orbit-two"></div>
+            <span class="stage-sparkle sparkle-one">✳</span><span class="stage-sparkle sparkle-two">✦</span>
+            <div class="avatar" aria-label="입체감 있는 코디 모델">
+              <svg class="avatar-body" viewBox="0 0 360 620" role="img" aria-label="옷을 입힐 수 있는 사람 모형">
+                <defs>
+                  <linearGradient id="skin" x1="0" x2="1"><stop stop-color="#b97859"/><stop offset=".3" stop-color="#eab293"/><stop offset=".7" stop-color="#f5caaa"/><stop offset="1" stop-color="#c98667"/></linearGradient>
+                  <linearGradient id="shirt" x1="0" x2="1"><stop stop-color="#d9c9fa"/><stop offset=".28" stop-color="#faf6ff"/><stop offset=".7" stop-color="#efdcff"/><stop offset="1" stop-color="#baaae4"/></linearGradient>
+                  <linearGradient id="pants" x1="0" x2="1"><stop stop-color="#7884a2"/><stop offset=".3" stop-color="#b3bfd1"/><stop offset=".68" stop-color="#a4b1c7"/><stop offset="1" stop-color="#67748e"/></linearGradient>
+                  <linearGradient id="hair" x1="0" x2="1"><stop stop-color="#30251f"/><stop offset=".5" stop-color="#5a4234"/><stop offset="1" stop-color="#291f1d"/></linearGradient>
+                  <filter id="shadow"><feGaussianBlur stdDeviation="11"/></filter>
+                </defs>
+                <ellipse cx="180" cy="594" rx="111" ry="17" fill="#685f7b" opacity=".24" filter="url(#shadow)"/>
+                <path d="M113 196 Q89 220 86 275 L68 384 Q64 403 75 408 Q87 412 94 397 L128 292 L150 224Z" fill="url(#skin)" stroke="#bd8a70" stroke-width="2"/>
+                <path d="M247 196 Q271 220 274 275 L292 384 Q296 403 285 408 Q273 412 266 397 L232 292 L210 224Z" fill="url(#skin)" stroke="#bd8a70" stroke-width="2"/>
+                <path d="M144 331 L177 331 L171 558 Q165 573 149 571 Q138 568 137 556Z" fill="url(#pants)" stroke="#65738e" stroke-width="2"/>
+                <path d="M183 331 L216 331 L223 556 Q222 569 211 571 Q195 573 189 558Z" fill="url(#pants)" stroke="#65738e" stroke-width="2"/>
+                <path d="M139 553 Q150 562 171 552 L172 581 Q147 591 117 584 Q109 578 120 571Z" fill="#f9f7ed" stroke="#c8c7bf" stroke-width="2"/>
+                <path d="M189 552 Q210 562 221 553 L240 571 Q251 578 243 584 Q213 591 188 581Z" fill="#f9f7ed" stroke="#c8c7bf" stroke-width="2"/>
+                <path d="M155 166 L205 166 L208 195 Q180 217 152 195Z" fill="url(#skin)"/>
+                <path d="M139 189 Q158 197 180 206 Q202 197 221 189 Q239 194 250 219 L232 329 Q180 346 128 329 L110 219 Q121 194 139 189Z" fill="url(#shirt)" stroke="#b5a5d7" stroke-width="2"/>
+                <path d="M136 197 Q128 237 139 290 M224 197 Q232 237 221 290" fill="none" stroke="#d1bee9" stroke-width="3" opacity=".6"/>
+                <ellipse cx="180" cy="117" rx="57" ry="69" fill="url(#hair)"/>
+                <ellipse cx="180" cy="126" rx="47" ry="57" fill="url(#skin)" stroke="#bc8d76" stroke-width="1.5"/>
+                <path d="M133 110 Q126 58 179 58 Q232 59 227 106 Q216 89 208 75 Q192 98 133 110Z" fill="url(#hair)"/>
+                <path d="M154 126 Q161 121 168 126 M192 126 Q199 121 206 126" fill="none" stroke="#68483f" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M177 147 Q181 150 185 147" fill="none" stroke="#a36f5e" stroke-width="2" stroke-linecap="round"/>
+                <path d="M169 163 Q180 168 191 163" fill="none" stroke="#a36268" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+              <div id="worn-items" class="worn-items"></div>
+            </div>
+            <span class="stage-floor" aria-hidden="true"></span>
+          </div>
+          <div id="outfit-slots" class="outfit-slots" aria-label="코디할 옷 종류"></div>
+        </section>
+      </main>
 
-      <footer><span>첫 페이지, 첫 걸음.</span><span>© <span id="year"></span></span></footer>
-    </main>
-    <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-  </body>
+      <aside class="plan" aria-label="내일의 코디 계획">
+        <div class="plan-top"><span class="eyebrow">TOMORROW'S LOOK</span><h2>내일 뭐 입지?<span aria-hidden="true">✳</span></h2><p id="tomorrow-choice">오늘 밤에 골라두면 내일 아침엔 입기만 하면 돼요.</p></div>
+        <div class="selection-panel"><div class="selection-head"><h3>지금 고른 옷</h3><button id="clear-outfit" class="text-button" type="button">다 비우기</button></div><div id="selected-list" class="selected-list"></div></div>
+        <label class="look-label" for="look-name">코디 이름</label><input id="look-name" class="look-name" type="text" maxlength="40" placeholder="예: 기분 좋은 월요일">
+        <button id="save-tomorrow" class="save-button" type="button">내일 입을 옷으로 정하기 <span aria-hidden="true">↗</span></button>
+        <button id="save-look" class="outline-button" type="button">코디만 저장하기</button>
+        <div class="saved-head"><h3>저장한 코디 <span id="look-count">0</span></h3></div><div id="saved-looks" class="saved-looks"></div>
+        <div class="privacy-note"><span aria-hidden="true">◌</span><p>현재는 이 브라우저에 저장됩니다. 여러 기기 동기화는 연결 준비 중이에요.</p></div>
+      </aside>
+    </div>
+    <footer>누워서 옷장 <span>오늘 밤의 코디가 내일의 여유가 되길 ☾</span></footer>
+  </div>
+
+  <div id="drawer-scrim" class="drawer-scrim" hidden></div>
+  <dialog id="upload-dialog" class="upload-dialog" aria-labelledby="upload-title"><form id="upload-form"><div class="dialog-head"><div><span class="eyebrow">A NEW PIECE</span><h2 id="upload-title">옷장에 넣기</h2></div><button id="close-dialog" class="dialog-close" type="button" aria-label="닫기">×</button></div><label class="photo-drop" for="photo-input"><span aria-hidden="true">✳</span><strong id="photo-label">옷 사진을 선택하거나 촬영하세요</strong><small>배경이 단순한 사진이면 모델에 더 자연스럽게 입혀져요.</small><img id="photo-preview" alt="선택한 옷 사진 미리보기" hidden></label><input id="photo-input" type="file" accept="image/*" hidden><label class="field-label" for="category-input">종류</label><select id="category-input" required><option value="top">상의</option><option value="bottom">하의</option><option value="outer">아우터</option><option value="dress">원피스</option><option value="shoes">신발</option><option value="bag">가방</option><option value="accessory">액세서리</option></select><label class="field-label" for="name-input">이름 <span>(선택)</span></label><input id="name-input" type="text" maxlength="40" placeholder="예: 파란 스트라이프 셔츠"><button id="upload-submit" class="save-button" type="submit">옷장에 넣기</button></form></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
 </html>
