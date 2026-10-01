@@ -3,15 +3,56 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>나의 옷장</title>
-  <style>
-    html, body { margin: 0; min-height: 100%; }
-    body { background: #faf8f5; }
-    main { min-height: 100vh; min-height: 100dvh; position: relative; overflow: hidden; }
-    img { display: block; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: auto; height: min(100vh, 1100px); height: min(100dvh, 1100px); object-fit: contain; }
-  </style>
+  <meta name="theme-color" content="#f8f4ef">
+  <meta name="description" content="내 사진과 옷 사진으로 가상 착용을 시험해 보는 온라인 옷장 실험실">
+  <title>온라인 옷장 · 입어보기 실험실</title>
+  <link rel="stylesheet" href="styles.css?v=3">
+  <script src="app.js?v=3" defer></script>
 </head>
 <body>
-  <main><img src="avatar.png?v=2" alt="검정 나시와 검정 반바지를 입은 실제 사람 비율의 3D 스타일 전신 캐릭터"></main>
+  <div class="site-shell">
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="온라인 옷장 처음으로"><span class="brand-mark">✳</span> 온라인 옷장</a>
+      <span class="topbar-tag">TRY-ON LAB ↗</span>
+    </header>
+    <main id="top">
+      <section class="intro">
+        <p class="eyebrow">✦ 우리의 첫 번째 기술 실험</p>
+        <h1>누워서도, <em>내일의 옷을</em><br>입어볼 수 있을까?</h1>
+        <p>내 사진과 옷 사진을 넣고 가상으로 입혀봐요. 옷 모양과 몸의 형태가 얼마나 자연스러운지 함께 확인해요.</p>
+      </section>
+      <section class="workspace" aria-label="가상 착용 실험">
+        <div class="stage-wrap">
+          <div class="section-label">01 / LOOK <span>✳ ✦ ✳</span></div>
+          <div class="stage">
+            <img id="stage-image" src="avatar.png?v=2" alt="검정 나시와 반바지를 입은 온라인 옷장 캐릭터">
+            <div class="stage-note">my little wardrobe<br>✦ fitting room ✦</div>
+            <div class="stage-bottom">오늘의 코디를 상상해 봐요 <span>✿</span></div>
+          </div>
+          <div class="stage-actions">
+            <button id="show-original" type="button" disabled>원본 보기</button>
+            <button id="show-result" type="button" disabled>착용 결과 보기</button>
+            <a id="download-result" href="#" download="my-try-on.png" hidden>결과 저장 ↓</a>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="section-label">02 / YOUR PHOTOS <span>✳</span></div>
+          <h2>내 옷으로<br><em>입어보기</em></h2>
+          <p class="panel-copy">전신 사진 한 장, 옷 사진 한 장이면 시작할 수 있어요. 밝고 단순한 배경의 사진이 좋아요.</p>
+          <div class="upload-grid">
+            <label class="upload-card"><input id="person-input" type="file" accept="image/png,image/jpeg,image/webp" aria-label="내 전신 사진 선택"><span class="upload-icon">♙</span><strong>내 전신 사진</strong><span id="person-name">사진 선택하기 +</span><img id="person-preview" alt="선택한 전신 사진" hidden></label>
+            <label class="upload-card"><input id="garment-input" type="file" accept="image/png,image/jpeg,image/webp" aria-label="옷 사진 선택"><span class="upload-icon">♧</span><strong>입혀볼 옷</strong><span id="garment-name">사진 선택하기 +</span><img id="garment-preview" alt="선택한 옷 사진" hidden></label>
+          </div>
+          <fieldset><legend>어떤 옷인가요?</legend><div class="choices"><label><input type="radio" name="category" value="tops" checked><span>상의</span></label><label><input type="radio" name="category" value="bottoms"><span>하의</span></label><label><input type="radio" name="category" value="one-pieces"><span>원피스</span></label></div></fieldset>
+          <fieldset><legend>옷 사진의 형태</legend><div class="choices"><label><input type="radio" name="photo-type" value="flat-lay" checked><span>옷만 찍은 사진</span></label><label><input type="radio" name="photo-type" value="model"><span>사람이 입은 사진</span></label></div></fieldset>
+          <button class="primary" id="try-on-button" type="button">이 옷 입어보기 ✦</button>
+          <p class="status" id="status" role="status" aria-live="polite">AI 연결을 확인하고 있어요.</p>
+          <div class="demo-box"><div><strong>먼저 결과를 보고 싶다면</strong><p>오픈소스 모델로 직접 만든 예시를 확인해 봐요.</p></div><button id="demo-button" type="button">예시 보기 ↗</button></div>
+        </div>
+      </section>
+      <section class="about">✳ <p>이건 완성된 옷장이 아닌 <strong>핏 실험실</strong>이에요. 결과는 코디를 상상하는 데 도움을 주지만, 실제 사이즈나 착용감을 보장하지 않아요. <a href="https://github.com/fashn-AI/fashn-vton-1.5" target="_blank" rel="noopener noreferrer">FASHN VTON v1.5 오픈소스 ↗</a></p> ✳</section>
+    </main>
+    <footer><span>ONLINE WARDROBE · FIT EXPERIMENT</span><span>made for tomorrow's outfit ♡</span></footer>
+  </div>
 </body>
 </html>
