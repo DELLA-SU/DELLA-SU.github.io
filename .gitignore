@@ -1,4 +1,6 @@
 .venv/
+.venv-avatar/
 fashn-vton-1.5/
+sam-3d-body-mlx-weights/
 __pycache__/
 *.pyc

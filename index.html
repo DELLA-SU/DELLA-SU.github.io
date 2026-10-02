@@ -6,8 +6,10 @@
   <meta name="theme-color" content="#f8f4ef">
   <meta name="description" content="내 사진과 옷 사진으로 가상 착용을 시험해 보는 온라인 옷장 실험실">
   <title>온라인 옷장 · 입어보기 실험실</title>
-  <link rel="stylesheet" href="styles.css?v=3">
-  <script src="app.js?v=3" defer></script>
+  <link rel="stylesheet" href="styles.css?v=5">
+  <script type="module" src="model-viewer.min.js"></script>
+  <script src="app.js?v=5" defer></script>
+  <script src="detail-editor.js?v=1" defer></script>
 </head>
 <body>
   <div class="site-shell">
@@ -26,29 +28,53 @@
           <div class="section-label">01 / LOOK <span>✳ ✦ ✳</span></div>
           <div class="stage">
             <img id="stage-image" src="avatar.png?v=2" alt="검정 나시와 반바지를 입은 온라인 옷장 캐릭터">
+            <model-viewer id="stage-model" src="sample-avatar.glb" alt="정면 전신 이미지에서 생성한 회전 가능한 3D 몸 형태 샘플" camera-controls touch-action="pan-y" interaction-prompt="none" shadow-intensity="0.7" camera-orbit="0deg 90deg 110%" hidden></model-viewer>
             <div class="stage-note">my little wardrobe<br>✦ fitting room ✦</div>
             <div class="stage-bottom">오늘의 코디를 상상해 봐요 <span>✿</span></div>
           </div>
           <div class="stage-actions">
             <button id="show-original" type="button" disabled>원본 보기</button>
             <button id="show-result" type="button" disabled>착용 결과 보기</button>
+            <button id="show-photo" type="button" hidden>사진으로 보기</button>
+            <button id="show-3d" type="button">3D 몸 형태 보기 ↻</button>
+            <button id="detail-button" type="button" hidden>로고·무늬 보정 ✦</button>
             <a id="download-result" href="#" download="my-try-on.png" hidden>결과 저장 ↓</a>
           </div>
         </div>
         <div class="panel">
           <div class="section-label">02 / YOUR PHOTOS <span>✳</span></div>
           <h2>내 옷으로<br><em>입어보기</em></h2>
-          <p class="panel-copy">전신 사진 한 장, 옷 사진 한 장이면 시작할 수 있어요. 밝고 단순한 배경의 사진이 좋아요.</p>
+          <p class="panel-copy">정면 전신 사진으로 몸의 3D 형태를 만들고, 옷 사진으로 가상 착용을 시험해 봐요. 밝고 단순한 배경이 좋아요.</p>
+          <div class="step-caption">01 · 내 캐릭터의 사진</div>
           <div class="upload-grid">
             <label class="upload-card"><input id="person-input" type="file" accept="image/png,image/jpeg,image/webp" aria-label="내 전신 사진 선택"><span class="upload-icon">♙</span><strong>내 전신 사진</strong><span id="person-name">사진 선택하기 +</span><img id="person-preview" alt="선택한 전신 사진" hidden></label>
-            <label class="upload-card"><input id="garment-input" type="file" accept="image/png,image/jpeg,image/webp" aria-label="옷 사진 선택"><span class="upload-icon">♧</span><strong>입혀볼 옷</strong><span id="garment-name">사진 선택하기 +</span><img id="garment-preview" alt="선택한 옷 사진" hidden></label>
+            <label class="upload-card"><input id="face-input" type="file" accept="image/png,image/jpeg,image/webp" aria-label="내 얼굴 사진 선택"><span class="upload-icon">◉</span><strong>얼굴 사진 미리보기</strong><span id="face-name">사진 선택하기 +</span><img id="face-preview" alt="선택한 얼굴 사진" hidden></label>
           </div>
+          <p class="avatar-hint" id="avatar-status">얼굴 사진은 이 브라우저에서만 미리 보여 줘요. 현재 3D 생성에는 전신 사진만 사용합니다. 얼굴 재현에는 별도 기술이 필요해요.</p>
+          <button class="avatar-generate" id="avatar-button" type="button">내 사진으로 3D 몸 형태 만들기 ↻</button>
+          <p class="avatar-research">얼굴 사진 장수: <a href="https://tobias-kirschstein.github.io/avat3r/static/Avat3r_paper.pdf" target="_blank" rel="noopener noreferrer">Avat3r 연구의 1·4·7장 비교 ↗</a>에서는 1장보다 4장이 좋았고 7장의 추가 이득은 크지 않았어요. 현재 몸 3D 모델은 얼굴 사진을 사용하지 않습니다.</p>
+          <div class="step-caption garment-step">02 · 입혀볼 옷</div>
+          <label class="upload-card garment-upload"><input id="garment-input" type="file" accept="image/png,image/jpeg,image/webp" aria-label="옷 사진 선택"><span class="upload-icon">♧</span><strong>입혀볼 옷</strong><span id="garment-name">사진 선택하기 +</span><img id="garment-preview" alt="선택한 옷 사진" hidden></label>
           <fieldset><legend>어떤 옷인가요?</legend><div class="choices"><label><input type="radio" name="category" value="tops" checked><span>상의</span></label><label><input type="radio" name="category" value="bottoms"><span>하의</span></label><label><input type="radio" name="category" value="one-pieces"><span>원피스</span></label></div></fieldset>
           <fieldset><legend>옷 사진의 형태</legend><div class="choices"><label><input type="radio" name="photo-type" value="flat-lay" checked><span>옷만 찍은 사진</span></label><label><input type="radio" name="photo-type" value="model"><span>사람이 입은 사진</span></label></div></fieldset>
+          <fieldset class="quality-choice"><legend>생성 품질</legend><div class="choices"><label><input type="radio" name="quality" value="20"><span>빠르게 · 20단계</span></label><label><input type="radio" name="quality" value="30" checked><span>균형 · 30단계</span></label><label><input type="radio" name="quality" value="50"><span>자세히 · 50단계</span></label></div><p>단계를 높여도 로고와 실제 옷 크기가 자동으로 정확해지지는 않아요.</p></fieldset>
+          <details class="measurements" id="measurement-panel">
+            <summary>실측으로 크기 비교하기 <span>↘</span></summary>
+            <p>몸과 옷을 줄자로 잰 값이에요. 사진만으로 실제 크기를 알 수 없어서 직접 입력이 필요해요.</p>
+            <div class="measurement-fields"><label><span id="body-measure-label">내 가슴둘레</span><input id="body-measure" type="number" min="1" max="300" step="0.1" inputmode="decimal" placeholder="예: 88"><small>cm</small></label><label><span id="garment-measure-label">옷 가슴 단면</span><input id="garment-measure" type="number" min="1" max="200" step="0.1" inputmode="decimal" placeholder="예: 48"><small>cm</small></label></div>
+            <p id="fit-result" class="fit-result">두 치수를 넣으면 둘레 차이를 계산해요.</p>
+          </details>
           <button class="primary" id="try-on-button" type="button">이 옷 입어보기 ✦</button>
           <p class="status" id="status" role="status" aria-live="polite">AI 연결을 확인하고 있어요.</p>
           <div class="demo-box"><div><strong>먼저 결과를 보고 싶다면</strong><p>오픈소스 모델로 직접 만든 예시를 확인해 봐요.</p></div><button id="demo-button" type="button">예시 보기 ↗</button></div>
         </div>
+      </section>
+      <section class="detail-editor" id="detail-editor" hidden aria-label="원본 로고와 무늬 보정">
+        <div class="detail-head"><div><span class="section-label">03 / ORIGINAL DETAILS</span><h2>원본 무늬를<br><em>다시 올려요</em></h2><p>옷 사진에서 로고나 무늬를 드래그해 선택하고, 결과 사진에서 올릴 위치를 눌러요. 크기와 각도를 조절한 뒤 적용할 수 있어요.</p></div><button id="detail-close" type="button" aria-label="보정 도구 닫기">×</button></div>
+        <div class="detail-canvases"><div><strong>① 원본 옷에서 영역 선택</strong><canvas id="source-canvas" aria-label="원본 옷 사진에서 로고 영역 선택"></canvas></div><div><strong>② 결과에서 위치 선택</strong><canvas id="result-canvas" aria-label="보정 결과 미리보기"></canvas></div></div>
+        <div class="detail-sliders"><label>크기 <input id="detail-scale" type="range" min="10" max="75" value="38"><output id="detail-scale-value">38%</output></label><label>각도 <input id="detail-rotation" type="range" min="-35" max="35" value="0"><output id="detail-rotation-value">0°</output></label></div>
+        <div class="detail-actions"><button id="detail-apply" type="button" disabled>이 보정 결과 적용하기</button><button id="detail-reset" type="button">선택 다시 하기</button></div>
+        <p class="detail-disclaimer">원본 사진의 선택한 부분을 복사합니다. 천의 입체적인 주름과 전체 무늬를 완벽하게 복원하지는 못해요.</p>
       </section>
       <section class="about">✳ <p>이건 완성된 옷장이 아닌 <strong>핏 실험실</strong>이에요. 결과는 코디를 상상하는 데 도움을 주지만, 실제 사이즈나 착용감을 보장하지 않아요. <a href="https://github.com/fashn-AI/fashn-vton-1.5" target="_blank" rel="noopener noreferrer">FASHN VTON v1.5 오픈소스 ↗</a></p> ✳</section>
     </main>

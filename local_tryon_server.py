@@ -11,6 +11,8 @@ import binascii
 import io
 import json
 import os
+import subprocess
+import tempfile
 import threading
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -25,9 +27,11 @@ pipeline = None
 pipeline_lock = threading.Lock()
 weights_dir = None
 device = "mps"
+avatar_python = None
+avatar_weights = None
 
 
-def parse_image(value):
+def parse_image(value, mode="RGB"):
     if not isinstance(value, str) or not value.startswith("data:image/") or "," not in value:
         raise ValueError("PNG, JPG 또는 WEBP 사진을 선택해 주세요.")
     encoded = value.split(",", 1)[1]
@@ -39,7 +43,7 @@ def parse_image(value):
         if image.width * image.height > MAX_PIXELS:
             raise ValueError("사진 해상도가 너무 커요. 더 작은 사진을 선택해 주세요.")
         image.load()
-        return image.convert("RGB")
+        return image.convert(mode)
     except (ValueError, binascii.Error, UnidentifiedImageError, OSError) as exc:
         raise ValueError("사진 파일을 읽을 수 없어요.") from exc
 
@@ -68,12 +72,12 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/api/health":
-            self.send_json(200, {"ready": weights_dir.is_dir(), "device": device})
+            self.send_json(200, {"ready": weights_dir.is_dir(), "avatar_ready": avatar_python is not None and avatar_weights is not None, "device": device})
         else:
             super().do_GET()
 
     def do_POST(self):
-        if self.path != "/api/tryon":
+        if self.path not in {"/api/tryon", "/api/avatar"}:
             self.send_json(404, {"error": "찾을 수 없어요."})
             return
         if self.headers.get("Content-Type", "").split(";")[0].strip() != "application/json":
@@ -84,10 +88,32 @@ class Handler(SimpleHTTPRequestHandler):
             if length <= 0 or length > MAX_BODY:
                 raise ValueError("사진 크기가 너무 커요.")
             payload = json.loads(self.rfile.read(length))
+            if self.path == "/api/avatar":
+                if avatar_python is None or avatar_weights is None:
+                    self.send_json(503, {"error": "3D 모델이 로컬 서버에 연결되지 않았어요."})
+                    return
+                photo = parse_image(payload.get("person_image"), mode="RGBA")
+                with tempfile.TemporaryDirectory(prefix="wardrobe-avatar-") as folder:
+                    source = Path(folder) / "person.png"
+                    output = Path(folder) / "avatar.glb"
+                    photo.save(source)
+                    with pipeline_lock:
+                        subprocess.run(
+                            [str(avatar_python), str(SITE_DIR / "local_avatar_generate.py"),
+                             "--image", str(source), "--output", str(output),
+                             "--weights-dir", str(avatar_weights)],
+                            check=True, timeout=300, capture_output=True, text=True,
+                        )
+                    model_url = "data:model/gltf-binary;base64," + base64.b64encode(output.read_bytes()).decode("ascii")
+                self.send_json(200, {"model": model_url})
+                return
             if payload.get("category") not in {"tops", "bottoms", "one-pieces"}:
                 raise ValueError("옷 종류를 선택해 주세요.")
             if payload.get("garment_photo_type") not in {"flat-lay", "model"}:
                 raise ValueError("옷 사진의 형태를 선택해 주세요.")
+            timesteps = payload.get("num_timesteps", 30)
+            if timesteps not in {20, 30, 50}:
+                raise ValueError("생성 품질 설정이 올바르지 않아요.")
             person = parse_image(payload.get("person_image"))
             garment = parse_image(payload.get("garment_image"))
             with pipeline_lock:
@@ -97,7 +123,7 @@ class Handler(SimpleHTTPRequestHandler):
                     category=payload["category"],
                     garment_photo_type=payload["garment_photo_type"],
                     num_samples=1,
-                    num_timesteps=20,
+                    num_timesteps=timesteps,
                     seed=42,
                     segmentation_free=True,
                 )
@@ -107,6 +133,11 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_json(200, {"image": image_url})
         except (ValueError, json.JSONDecodeError) as exc:
             self.send_json(400, {"error": str(exc)})
+        except subprocess.TimeoutExpired:
+            self.send_json(504, {"error": "3D 모델 생성 시간이 초과됐어요."})
+        except subprocess.CalledProcessError as exc:
+            print(f"Avatar failed: {exc.stderr[-3000:] if exc.stderr else exc}", flush=True)
+            self.send_json(500, {"error": "3D 모델을 만들지 못했어요. 전신이 보이는 사진으로 다시 시도해 주세요."})
         except Exception as exc:
             print(f"Try-on failed: {exc}", flush=True)
             self.send_json(500, {"error": "이미지를 만들지 못했어요. 서버 기록을 확인해 주세요."})
@@ -117,9 +148,19 @@ if __name__ == "__main__":
     parser.add_argument("--weights-dir", required=True, type=Path)
     parser.add_argument("--device", default="mps", choices=["mps", "cuda", "cpu"])
     parser.add_argument("--port", default=4319, type=int)
+    parser.add_argument("--avatar-python", type=Path, help="Python executable with mlx-vlm and trimesh")
+    parser.add_argument("--avatar-weights-dir", type=Path, help="Local SAM 3D Body MLX model directory")
     args = parser.parse_args()
     weights_dir = args.weights_dir.resolve()
     device = args.device
+    if args.avatar_python or args.avatar_weights_dir:
+        if not args.avatar_python or not args.avatar_weights_dir:
+            parser.error("--avatar-python and --avatar-weights-dir must be used together")
+        # Keep the venv symlink: resolving it would launch the base interpreter.
+        avatar_python = args.avatar_python.absolute()
+        avatar_weights = args.avatar_weights_dir.resolve()
+        if not avatar_python.is_file() or not avatar_weights.is_dir():
+            parser.error("Avatar Python or weights directory not found")
     if not weights_dir.is_dir():
         parser.error(f"Weights not found: {weights_dir}")
     os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
