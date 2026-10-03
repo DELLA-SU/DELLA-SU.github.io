@@ -81,18 +81,19 @@ function nav(){
 function slotItem(slots,key){ return state.items.find(item=>item.id===slots?.[key])||null; }
 function selection(){ return {...EMPTY_SLOTS,...(state.profile?.selection||{})}; }
 function figureMarkup(profile=state.profile,slots=selection(),prefix='figure',view=state.view,realisticImage=null){
-  const photo=realisticImage||profile?.bodyImages?.[view];
-  if(photo)return '<div class="real-photo"><img src="'+photo+'" alt="'+(realisticImage?'AI로 옷을 입힌 실사 이미지':'업로드한 '+({front:'정면',side:'측면',back:'뒷면'}[view]||'전신')+' 사진')+'"></div>';
+  const avatar=view==='front'?profile?.avatarImage:null;
+  const photo=realisticImage||avatar||profile?.bodyImages?.[view];
+  if(photo)return '<div class="real-photo"><img src="'+photo+'" alt="'+(realisticImage?'AI로 옷을 입힌 실사 이미지':avatar?'얼굴과 전신 사진을 참고해 생성한 실사 아바타':'업로드한 '+({front:'정면',side:'측면',back:'뒷면'}[view]||'전신')+' 사진')+'"></div>';
   return '<div class="real-photo sample-photo"><img src="./sample-fashion-model.png" alt="사진 업로드 전 보여주는 예시 패션 모델"><span class="sample-label">예시 모델 · 전신 사진을 넣으면 내 사진으로 바뀌어요</span></div>';
 }
 function viewButtons(){
   if(!state.profile?.bodyImages?.front)return '';
-  return '<div class="view-toggle">'+[['front','정면'],['side','측면'],['back','뒷면']].map(([id,label])=>'<button class="tiny-btn '+(state.view===id?'active':'')+'" type="button" data-action="set-view" data-view="'+id+'" '+(!state.profile.bodyImages[id]?'disabled':'')+'>'+label+'</button>').join('')+'</div>';
+  return '<div class="view-toggle">'+[['front',state.profile.avatarImage?'아바타':'정면'],['side','측면'],['back','뒷면']].map(([id,label])=>'<button class="tiny-btn '+(state.view===id?'active':'')+'" type="button" data-action="set-view" data-view="'+id+'" '+(!state.profile.bodyImages[id]?'disabled':'')+'>'+label+'</button>').join('')+'</div>';
 }
 
 function onboarding(){
   const draft={height:165,weight:55,skin:SKINS[0],hair:HAIRS[0],faceImage:null,bodyImages:{}};
-  app.innerHTML=shell('<section class="onboard"><div class="onboard-copy"><div class="eyebrow">STEP 01 / START HERE</div><h1>먼저, 나의<br>인형을 만들어요</h1><p>키와 몸무게, 정면 전신 사진으로 내 인형을 만들어요. 사진 속 실제 비율을 사용하고, 옷을 등록해 내일의 코디를 시작해요.</p><form id="onboard-form" class="card onboard-form form-stack"><div class="field-row"><div class="field"><label for="height">키 · cm</label><input id="height" name="height" type="number" inputmode="decimal" min="100" max="220" step="0.1" value="165" required></div><div class="field"><label for="weight">몸무게 · kg</label><input id="weight" name="weight" type="number" inputmode="decimal" min="25" max="250" step="0.1" value="55" required></div></div><div class="field"><label for="closet-name">내 옷장 이름</label><input id="closet-name" name="closetName" maxlength="30" value="내일의 옷장" required></div><div class="field"><label for="body-front">정면 전신 사진 · 필수</label><input id="body-front" type="file" accept="image/*" required><small>머리부터 발끝까지 보이는 사진을 사용해 주세요. SNS 캡처의 검은 상·하단은 자동으로 제외해요.</small></div><div class="field-row"><div class="field"><label for="body-side">측면 전신 · 선택</label><input id="body-side" type="file" accept="image/*"></div><div class="field"><label for="body-back">뒷면 전신 · 선택</label><input id="body-back" type="file" accept="image/*"></div></div><div class="field"><label for="face-photo">정면 얼굴 사진 · 선택</label><input id="face-photo" type="file" accept="image/*"><small>얼굴 사진은 이 브라우저에 저장됩니다. 현재 실사 화면에는 전신 사진만 표시돼요.</small></div><div class="create-row"><button class="primary" type="submit">나의 인형 만들기 →</button><span class="hint">입력값은 이 브라우저에 저장돼요.</span></div></form></div><div class="onboard-preview" id="onboard-preview">'+figureMarkup(draft,EMPTY_SLOTS,'onboard','front')+'<div class="sticker">MY<br>DOLL ♡</div></div></section>',true);
+  app.innerHTML=shell('<section class="onboard"><div class="onboard-copy"><div class="eyebrow">STEP 01 / START HERE</div><h1>먼저, 나의<br>인형을 만들어요</h1><p>키와 몸무게, 정면 전신·얼굴 사진을 등록해요. 실사 아바타 생성은 AI 서버 연결 후 진행하며, 생성 결과는 먼저 확인하고 저장할 수 있어요.</p><form id="onboard-form" class="card onboard-form form-stack"><div class="field-row"><div class="field"><label for="height">키 · cm</label><input id="height" name="height" type="number" inputmode="decimal" min="100" max="220" step="0.1" value="165" required></div><div class="field"><label for="weight">몸무게 · kg</label><input id="weight" name="weight" type="number" inputmode="decimal" min="25" max="250" step="0.1" value="55" required></div></div><div class="field"><label for="closet-name">내 옷장 이름</label><input id="closet-name" name="closetName" maxlength="30" value="내일의 옷장" required></div><div class="field"><label for="body-front">정면 전신 사진 · 필수</label><input id="body-front" type="file" accept="image/*" required><small>머리부터 발끝까지 보이는 사진을 사용해 주세요. SNS 캡처의 검은 상·하단은 자동으로 제외해요.</small></div><div class="field-row"><div class="field"><label for="body-side">측면 전신 · 선택</label><input id="body-side" type="file" accept="image/*"></div><div class="field"><label for="body-back">뒷면 전신 · 선택</label><input id="body-back" type="file" accept="image/*"></div></div><div class="field"><label for="face-photo">정면 얼굴 사진 · 아바타 생성에 필요</label><input id="face-photo" type="file" accept="image/*"><small>얼굴이 가리지 않고 선명한 사진이 필요해요. AI 생성을 실행하기 전까지 이 브라우저에만 저장됩니다.</small></div><div class="create-row"><button class="primary" type="submit">사진 저장하고 시작하기 →</button><span class="hint">입력값은 이 브라우저에 저장돼요.</span></div></form></div><div class="onboard-preview" id="onboard-preview">'+figureMarkup(draft,EMPTY_SLOTS,'onboard','front')+'<div class="sticker">MY<br>DOLL ♡</div></div></section>',true);
   const update=()=>{
     draft.height=Number($('#height').value)||165;
     draft.weight=Number($('#weight').value)||55;
@@ -126,8 +127,8 @@ function onboarding(){
     await put('profile',state.profile);
     state.tab='studio';
     render();
-    toast('인형이 만들어졌어요! 이제 옷을 올려주세요.');
-    openUpload();
+    toast('사진을 저장했어요. 실사 아바타 생성은 별도로 진행해요.');
+    if(state.profile.faceImage)openAvatarCreation();else openUpload();
   });
 }
 
@@ -142,7 +143,7 @@ function studio(){
   const controls=[
     ['accessories','소품'],['tops','상의'],['bottoms','하의'],['shoes','신발']
   ].map(([key,label])=>'<div class="cycle left '+key+'"><button type="button" data-action="cycle" data-category="'+key+'" data-dir="-1" aria-label="'+label+' 이전">‹</button><span>'+label+'</span></div><div class="cycle right '+key+'"><span>'+label+'</span><button type="button" data-action="cycle" data-category="'+key+'" data-dir="1" aria-label="'+label+' 다음">›</button></div>').join('');
-  return '<div class="page studio"><aside class="card side-panel"><div class="eyebrow">01 / MY CLOSET</div><h2>내 옷장</h2><p class="subhead">옷을 고른 뒤 실사 입혀보기를 누르면 내 사진에 합성돼요. PC에서는 끌어서 선택할 수도 있어요.</p><div class="filter-row">'+filterButtons()+'</div><div class="item-list">'+itemCards+'</div><div class="side-actions"><button class="primary" type="button" data-action="open-upload">＋ 옷 추가</button><button class="pill" type="button" data-tab="wardrobe">전체 보기</button></div></aside><section class="stage-panel" id="stage"><div class="stage-head"><div><div class="eyebrow">02 / DRESSING ROOM</div><h2>'+esc(state.profile.closetName)+'</h2></div>'+(state.profile.bodyImages?.front?viewButtons():'<span class="mono">EXAMPLE MODEL</span>')+'</div><div class="stage-area"><div class="stage-doll"><div class="floor"></div>'+figureMarkup(state.profile,slots,'main',state.view,state.view==='front'?state.tryonResult?.image:null)+'</div></div>'+controls+'<div class="stage-foot">' +(state.profile.bodyImages?.front?'<small>옷을 고른 뒤 실사 입혀보기를 눌러 합성해요.</small>':'<small>전신 사진을 올리면 내 사진으로 코디할 수 있어요.</small>')+ '<div class="stage-buttons"><button class="secondary" type="button" data-action="reset-look">다시 입히기</button>'+(state.profile.bodyImages?.front?'<button class="secondary" type="button" data-action="run-tryon">실사 입혀보기 ✦</button>':'')+'<button class="primary" type="button" data-action="save-look">이 코디 저장 ♡</button></div></div></section><aside class="info-panel"><div class="card"><div class="eyebrow">TODAYS LOOK</div><h3>'+((state.profile.bodyImages?.front&&!state.tryonResult)?'합성할 옷':'지금 입은 옷')+'</h3><div class="slot-list">'+slotRows+'</div></div><div class="card"><div class="eyebrow">NEXT STEP</div><h3>내일 입어볼까요?</h3><p>마음에 든 코디를 저장하고 달력에서 날짜를 골라두세요.</p><button class="secondary" type="button" data-tab="calendar">캘린더 보기 →</button></div><button class="feature-link" type="button" data-tab="settings">✦ 내 인형 사진과 기본 정보 수정하기 →</button></aside></div>';
+  return '<div class="page studio"><aside class="card side-panel"><div class="eyebrow">01 / MY CLOSET</div><h2>내 옷장</h2><p class="subhead">옷을 고른 뒤 실사 입혀보기를 누르면 내 사진에 합성돼요. PC에서는 끌어서 선택할 수도 있어요.</p><div class="filter-row">'+filterButtons()+'</div><div class="item-list">'+itemCards+'</div><div class="side-actions"><button class="primary" type="button" data-action="open-upload">＋ 옷 추가</button><button class="pill" type="button" data-tab="wardrobe">전체 보기</button></div></aside><section class="stage-panel" id="stage"><div class="stage-head"><div><div class="eyebrow">02 / DRESSING ROOM</div><h2>'+esc(state.profile.closetName)+'</h2></div>'+(state.profile.bodyImages?.front?viewButtons():'<span class="mono">EXAMPLE MODEL</span>')+'</div><div class="stage-area"><div class="stage-doll"><div class="floor"></div>'+figureMarkup(state.profile,slots,'main',state.view,state.view==='front'?state.tryonResult?.image:null)+'</div></div>'+controls+'<div class="stage-foot">' +(state.profile.bodyImages?.front?'<small>옷을 고른 뒤 실사 입혀보기를 눌러 합성해요.</small>':'<small>전신 사진을 올리면 내 사진으로 코디할 수 있어요.</small>')+ '<div class="stage-buttons"><button class="secondary" type="button" data-action="open-avatar">'+(state.profile.avatarImage?'아바타 다시 만들기':'실사 아바타 만들기')+'</button><button class="secondary" type="button" data-action="reset-look">다시 입히기</button>'+(state.profile.bodyImages?.front?'<button class="secondary" type="button" data-action="run-tryon">실사 입혀보기 ✦</button>':'')+'<button class="primary" type="button" data-action="save-look">이 코디 저장 ♡</button></div></div></section><aside class="info-panel"><div class="card"><div class="eyebrow">TODAYS LOOK</div><h3>'+((state.profile.bodyImages?.front&&!state.tryonResult)?'합성할 옷':'지금 입은 옷')+'</h3><div class="slot-list">'+slotRows+'</div></div><div class="card"><div class="eyebrow">NEXT STEP</div><h3>내일 입어볼까요?</h3><p>마음에 든 코디를 저장하고 달력에서 날짜를 골라두세요.</p><button class="secondary" type="button" data-tab="calendar">캘린더 보기 →</button></div><button class="feature-link" type="button" data-tab="settings">✦ 내 인형 사진과 기본 정보 수정하기 →</button></aside></div>';
 }
 function miniItem(item,selected=false){
   return '<div class="item-card '+(selected?'selected':'')+'" draggable="true" data-drag-id="'+item.id+'"><button class="item-remove" type="button" data-action="delete-item" data-id="'+item.id+'" aria-label="'+esc(item.name)+' 삭제">×</button><div class="item-thumb" data-action="wear" data-id="'+item.id+'"><img src="'+item.image+'" alt=""></div><div class="item-meta" data-action="wear" data-id="'+item.id+'"><span class="item-name">'+esc(item.name)+'</span><span class="item-kind">'+cat(item.category).label+'</span></div></div>';
@@ -160,7 +161,7 @@ function emptyPage(icon,title,copy,button,action){
 }
 function lookVisual(look,prefix){
   if(look.realisticImage)return '<img class="look-photo" src="'+look.realisticImage+'" alt="실사 코디 결과">';
-  const src=state.profile?.bodyImages?.front||'./sample-fashion-model.png';
+  const src=state.profile?.avatarImage||state.profile?.bodyImages?.front||'./sample-fashion-model.png';
   const pieces=CATS.map(c=>slotItem(look.slots,c.id)).filter(Boolean);
   return '<div class="look-composite"><img class="look-photo" src="'+src+'" alt="실사 합성 전 전신 사진"><div class="look-pieces">'+pieces.slice(0,3).map(item=>'<img src="'+item.image+'" alt="'+esc(item.name)+'">').join('')+'</div><span class="look-unrendered">합성 전 코디</span></div>';
 }
@@ -183,7 +184,7 @@ function calendar(){
 }
 function settings(){
   const p=state.profile;
-  return '<div class="page"><div class="page-head"><div><div class="eyebrow">MY DOLL / SETTINGS</div><h1 class="heading">내 인형 설정</h1><p>옷장 이름과 사진을 언제든 바꿀 수 있어요. 키와 몸무게는 기록용입니다.</p></div></div><div class="settings-grid"><section class="card settings-card"><h2>기본 정보</h2><form id="settings-form" class="form-stack"><div class="field"><label for="settings-name">옷장 이름</label><input id="settings-name" name="closetName" maxlength="30" value="'+esc(p.closetName)+'" required></div><div class="field-row"><div class="field"><label for="settings-height">키 · cm</label><input id="settings-height" name="height" type="number" min="100" max="220" step="0.1" value="'+p.height+'" required></div><div class="field"><label for="settings-weight">몸무게 · kg</label><input id="settings-weight" name="weight" type="number" min="25" max="250" step="0.1" value="'+p.weight+'" required></div></div><div class="field"><label for="settings-body-front">정면 전신 사진 · 실사 화면</label><input id="settings-body-front" type="file" accept="image/*"></div><div class="field-row"><div class="field"><label for="settings-body-side">측면 전신</label><input id="settings-body-side" type="file" accept="image/*"></div><div class="field"><label for="settings-body-back">뒷면 전신</label><input id="settings-body-back" type="file" accept="image/*"></div></div><div class="field"><label for="settings-face">얼굴 사진 바꾸기 · 선택</label><input id="settings-face" type="file" accept="image/*"><small>얼굴 사진은 이 브라우저에만 저장되며 현재 화면에는 전신 사진이 표시돼요.</small></div><button class="primary" type="submit">인형 정보 저장</button></form></section><section class="card settings-card"><h2>내 데이터</h2><p class="hint">현재 옷 사진과 코디는 이 브라우저에 저장됩니다. 다른 기기로 옮길 때는 백업 파일을 내보낸 뒤 다른 기기에서 가져오세요.</p><div class="setting-actions"><button class="secondary" type="button" data-action="export-data">백업 내보내기</button><button class="pill" type="button" data-action="import-data">백업 가져오기</button></div><p class="hint">자동으로 여러 기기에 동기화하려면 계정과 저장 서버 연결이 필요합니다.</p><hr style="border:0;border-top:1px solid #f0c6d6;margin:24px 0"><h2>실제 사진으로 입혀보기</h2><p class="hint">옷 사진과 전신 사진의 실제 핏을 시험하는 기능은 로컬 AI 서버에서만 작동합니다. 전신 사진을 올리면 실사 룩북 화면으로 바뀝니다. 옷 합성은 로컬 AI 서버에서만 실행돼요.</p><button class="pill" type="button" data-action="open-tryon">로컬 AI 입혀보기 실험</button></section></div></div>';
+  return '<div class="page"><div class="page-head"><div><div class="eyebrow">MY DOLL / SETTINGS</div><h1 class="heading">내 인형 설정</h1><p>옷장 이름과 사진을 언제든 바꿀 수 있어요. 키와 몸무게는 기록용입니다.</p></div></div><div class="settings-grid"><section class="card settings-card"><h2>기본 정보</h2><form id="settings-form" class="form-stack"><div class="field"><label for="settings-name">옷장 이름</label><input id="settings-name" name="closetName" maxlength="30" value="'+esc(p.closetName)+'" required></div><div class="field-row"><div class="field"><label for="settings-height">키 · cm</label><input id="settings-height" name="height" type="number" min="100" max="220" step="0.1" value="'+p.height+'" required></div><div class="field"><label for="settings-weight">몸무게 · kg</label><input id="settings-weight" name="weight" type="number" min="25" max="250" step="0.1" value="'+p.weight+'" required></div></div><div class="field"><label for="settings-body-front">정면 전신 사진 · 실사 화면</label><input id="settings-body-front" type="file" accept="image/*"></div><div class="field-row"><div class="field"><label for="settings-body-side">측면 전신</label><input id="settings-body-side" type="file" accept="image/*"></div><div class="field"><label for="settings-body-back">뒷면 전신</label><input id="settings-body-back" type="file" accept="image/*"></div></div><div class="field"><label for="settings-face">얼굴 사진 바꾸기 · 선택</label><input id="settings-face" type="file" accept="image/*"><small>선명한 얼굴 사진을 준비해 주세요. 실사 아바타를 만들 때 전신 사진과 함께 사용합니다.</small></div><button class="primary" type="submit">인형 정보 저장</button></form></section><section class="card settings-card"><h2>실사 아바타</h2><p class="hint">현재 상태: '+(p.avatarImage?'얼굴과 전신 사진을 참고한 AI 아바타가 저장됐어요.':'전신 사진을 기본 화면에 표시 중이에요. AI 아바타는 아직 생성하지 않았어요.')+'</p><button class="secondary" type="button" data-action="open-avatar">'+(p.avatarImage?'아바타 다시 만들기':'얼굴·전신 사진으로 아바타 만들기')+'</button><hr style="border:0;border-top:1px solid #f0c6d6;margin:24px 0"><h2>내 데이터</h2><p class="hint">현재 옷 사진과 코디는 이 브라우저에 저장됩니다. 다른 기기로 옮길 때는 백업 파일을 내보낸 뒤 다른 기기에서 가져오세요.</p><div class="setting-actions"><button class="secondary" type="button" data-action="export-data">백업 내보내기</button><button class="pill" type="button" data-action="import-data">백업 가져오기</button></div><p class="hint">자동으로 여러 기기에 동기화하려면 계정과 저장 서버 연결이 필요합니다.</p><hr style="border:0;border-top:1px solid #f0c6d6;margin:24px 0"><h2>실제 사진으로 입혀보기</h2><p class="hint">옷 사진과 전신 사진으로 실사 합성을 시험할 수 있어요. 로컬 오픈소스 AI 또는 별도로 연결한 FASHN AI를 선택할 수 있습니다.</p><button class="pill" type="button" data-action="open-tryon">실사 입혀보기 실험</button></section></div></div>';
 }
 function render(){
   if(!state.profile){onboarding();return;}
@@ -342,7 +343,7 @@ async function shareLook(id){
       ctx.fillStyle='#fff0f6';ctx.fillRect(0,0,900,1450);
       ctx.fillStyle='#663f70';ctx.font='bold 44px sans-serif';ctx.fillText(look.name,56,85,788);
       ctx.fillStyle='#ad688c';ctx.font='24px sans-serif';ctx.fillText('내일의 옷장 · 합성 전 코디',58,126);
-      const photo=new Image();photo.src=state.profile?.bodyImages?.front||'./sample-fashion-model.png';await photo.decode();
+      const photo=new Image();photo.src=state.profile?.avatarImage||state.profile?.bodyImages?.front||'./sample-fashion-model.png';await photo.decode();
       ctx.fillStyle='#fff';ctx.fillRect(55,155,790,1060);
       const scale=Math.min(760/photo.width,1020/photo.height);
       ctx.drawImage(photo,450-photo.width*scale/2,175,photo.width*scale,photo.height*scale);
@@ -415,6 +416,48 @@ function importData(){
     }catch(error){console.error(error);toast('올바른 옷장 백업 파일인지 확인해 주세요.');}
   });
 }
+function openAvatarCreation(){
+  if(!state.profile?.bodyImages?.front||!state.profile.faceImage){
+    toast('정면 전신 사진과 가리지 않은 얼굴 사진을 먼저 등록해 주세요.');
+    state.tab='settings';render();return;
+  }
+  const root=modal('<div class="eyebrow">PHOTO AVATAR / EXPERIMENT</div><h2>내 모습으로 실사 아바타 만들기</h2><p>전신 사진의 자세·체형과 얼굴 사진을 참고해 검정 민소매, 검정 반바지, 맨발의 새 이미지를 생성합니다. 결과가 실제 몸 치수나 얼굴과 완전히 같지는 않을 수 있어요.</p><form id="avatar-form" class="form-stack"><label class="consent-row"><input id="avatar-consent" type="checkbox" required><span>생성을 위해 얼굴 사진과 전신 사진을 FASHN AI 서버로 보내는 데 동의합니다. 생성에는 유료 API 크레딧이 사용됩니다.</span></label><div class="progress" hidden><span style="width:35%"></span></div><p id="avatar-status" class="hint">AI 생성을 시작하기 전에 서버 연결을 확인합니다.</p><div class="avatar-result" hidden><img alt="생성된 실사 아바타 미리보기"><p class="hint">결과를 확인한 뒤 마음에 들면 저장하세요.</p></div><div class="modal-actions"><button class="pill" type="button" data-close-modal>닫기</button><button class="primary" type="submit">아바타 생성</button><button class="primary" id="accept-avatar" type="button" hidden>이 아바타 사용</button></div></form>');
+  let generated=null;
+  $('#avatar-form',root).addEventListener('submit',async event=>{
+    event.preventDefault();
+    if(!event.target.reportValidity())return;
+    const button=$('#avatar-form [type=submit]',root),status=$('#avatar-status',root);
+    button.disabled=true;status.textContent='AI 서버 연결을 확인하고 있어요…';
+    try{
+      const health=await fetch('/api/health',{cache:'no-store'});
+      const info=health.ok?await health.json():null;
+      if(!info?.cloud_ready)throw Error('현재 AI 서버가 연결되지 않았어요. FASHN_API_KEY가 설정된 로컬 서버에서 실행해 주세요.');
+      $('.progress',root).hidden=false;
+      status.textContent='얼굴과 전신 사진으로 실사 아바타를 생성하고 있어요…';
+      const response=await fetch('/api/cloud-avatar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        face_image:state.profile.faceImage,
+        body_image:state.profile.bodyImages.front,
+        external_photo_consent:true
+      })});
+      const data=await response.json();
+      if(!response.ok||!data.image)throw Error(data.error||'아바타 생성에 실패했어요.');
+      generated=data.image;
+      $('.avatar-result img',root).src=generated;
+      $('.avatar-result',root).hidden=false;
+      $('#accept-avatar',root).hidden=false;
+      button.hidden=true;
+      status.textContent='생성됐어요. 얼굴과 비율을 확인해 주세요.';
+    }catch(error){status.textContent=error.message||'오류가 생겼어요.';button.disabled=false;}
+    finally{$('.progress',root).hidden=true;}
+  });
+  $('#accept-avatar',root).addEventListener('click',async()=>{
+    if(!generated)return;
+    state.profile.avatarImage=generated;
+    state.tryonResult=null;state.view='front';
+    await put('profile',state.profile);
+    root.remove();render();toast('실사 아바타를 저장했어요.');
+  });
+}
 function openTryon(){
   if(!state.profile.bodyImages?.front){
     modal('<div class="eyebrow">PHOTO LOOKBOOK</div><h2>정면 전신 사진이 필요해요</h2><p>설정에서 머리부터 발끝까지 보이는 정면 사진을 넣으면 실사 화면을 사용할 수 있어요.</p><div class="modal-actions"><button class="primary" type="button" data-close-modal>확인</button></div>');
@@ -422,27 +465,41 @@ function openTryon(){
   }
   const selected=['tops','bottoms','dresses'].map(key=>slotItem(selection(),key)).filter(Boolean);
   if(!selected.length){toast('상의, 하의 또는 원피스를 먼저 골라주세요.');return;}
-  const root=modal('<div class="eyebrow">LOCAL AI TRY-ON</div><h2>내 사진에 옷 입혀보기</h2><p>선택한 옷 한 벌을 실제 전신 사진에 합성합니다. 로컬 AI 서버가 연결되어 있어야 하고 몇 분 걸릴 수 있어요.</p><form id="tryon-form" class="form-stack"><div class="field"><label for="tryon-item">합성할 옷</label><select id="tryon-item">'+selected.map(item=>'<option value="'+item.id+'">'+esc(item.name)+'</option>').join('')+'</select></div><div class="field"><label for="tryon-photo-type">옷 사진 형태</label><select id="tryon-photo-type"><option value="flat-lay">옷만 찍은 사진</option><option value="model">사람이 입은 사진</option></select></div><div class="progress" hidden><span style="width:35%"></span></div><p id="tryon-status" class="hint"></p><div class="modal-actions"><button class="pill" type="button" data-close-modal>닫기</button><button class="primary" type="submit">실사 결과 만들기</button></div></form>');
+  const root=modal('<div class="eyebrow">PHOTO TRY-ON / EXPERIMENT</div><h2>내 사진에 옷 입혀보기</h2><p>선택한 옷 한 벌을 전신 사진 또는 저장된 아바타에 합성합니다.</p><form id="tryon-form" class="form-stack"><div class="field"><label for="tryon-item">합성할 옷</label><select id="tryon-item">'+selected.map(item=>'<option value="'+item.id+'">'+esc(item.name)+'</option>').join('')+'</select></div><div class="field"><label for="tryon-engine">생성 방식</label><select id="tryon-engine"><option value="local">로컬 오픈소스 · 내 컴퓨터에서 처리</option><option value="cloud">고화질 FASHN AI · 외부 서버에서 처리</option></select></div><div class="field" id="local-photo-type"><label for="tryon-photo-type">옷 사진 형태</label><select id="tryon-photo-type"><option value="flat-lay">옷만 찍은 사진</option><option value="model">사람이 입은 사진</option></select></div><label class="consent-row" id="cloud-consent-row" hidden><input id="tryon-consent" type="checkbox"><span>아바타 또는 전신 사진과 옷 사진을 FASHN AI 서버로 보내는 데 동의합니다. 유료 API 크레딧이 사용됩니다.</span></label><div class="progress" hidden><span style="width:35%"></span></div><p id="tryon-status" class="hint">선택한 방식의 AI 서버가 연결되어 있어야 생성할 수 있어요.</p><div class="modal-actions"><button class="pill" type="button" data-close-modal>닫기</button><button class="primary" type="submit">실사 결과 만들기</button></div></form>');
+  $('#tryon-engine',root).addEventListener('change',event=>{
+    const cloud=event.target.value==='cloud';
+    $('#local-photo-type',root).hidden=cloud;
+    $('#cloud-consent-row',root).hidden=!cloud;
+    $('#tryon-consent',root).required=cloud;
+  });
   $('#tryon-form',root).addEventListener('submit',async event=>{
     event.preventDefault();
+    if(!event.target.reportValidity())return;
     const item=state.items.find(i=>i.id===$('#tryon-item',root).value);
     if(!item)return;
+    const cloud=$('#tryon-engine',root).value==='cloud';
     const button=$('[type=submit]',root),status=$('#tryon-status',root);
     button.disabled=true;
-    status.textContent='로컬 AI 서버를 확인하고 있어요…';
+    status.textContent='AI 서버를 확인하고 있어요…';
     try{
       const health=await fetch('/api/health',{cache:'no-store'});
       const info=health.ok?await health.json():null;
-      if(!info?.ready)throw Error('현재 페이지에는 AI 서버가 연결되지 않았어요. 공개 GitHub Pages에서는 실사 합성을 실행할 수 없습니다.');
+      if(cloud&&!info?.cloud_ready)throw Error('FASHN_API_KEY가 설정된 로컬 AI 서버가 필요해요.');
+      if(!cloud&&!info?.ready)throw Error('로컬 오픈소스 AI 서버가 필요해요. 공개 GitHub Pages에서는 직접 생성할 수 없습니다.');
       $('.progress',root).hidden=false;
-      status.textContent='옷을 합성하고 있어요. 맥에서는 몇 분 걸릴 수 있어요.';
-      const response=await fetch('/api/tryon',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-        person_image:state.profile.bodyImages.front,
+      status.textContent=cloud?'FASHN AI가 실사 착용 이미지를 만들고 있어요…':'로컬 AI가 옷을 합성하고 있어요. 몇 분 걸릴 수 있어요.';
+      const payload=cloud?{
+        avatar_image:state.profile.avatarImage||state.profile.bodyImages.front,
+        garment_image:item.image,
+        external_photo_consent:true
+      }:{
+        person_image:state.profile.avatarImage||state.profile.bodyImages.front,
         garment_image:item.image,
         category:item.category==='dresses'?'one-pieces':item.category,
         garment_photo_type:$('#tryon-photo-type',root).value,
         num_timesteps:20
-      })});
+      };
+      const response=await fetch(cloud?'/api/cloud-tryon':'/api/tryon',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       const data=await response.json();
       if(!response.ok||!data.image)throw Error(data.error||'실사 결과를 만들지 못했어요.');
       state.tryonResult={image:data.image,itemId:item.id};
@@ -454,6 +511,7 @@ function openTryon(){
   });
 }
 function bindMain(){
+  let identityPhotoChanged=false;
   app.onclick=async event=>{
     const tab=event.target.closest('[data-tab]');
     if(tab){state.tab=tab.dataset.tab;state.filter='all';state.search='';render();return;}
@@ -494,6 +552,7 @@ function bindMain(){
     else if(action==='export-data')exportData();
     else if(action==='import-data')importData();
     else if(action==='open-tryon')openTryon();
+    else if(action==='open-avatar')openAvatarCreation();
   };
   $('#search-items')?.addEventListener('input',event=>{
     state.search=event.target.value;
@@ -505,7 +564,7 @@ function bindMain(){
   $('#settings-face')?.addEventListener('change',async event=>{
     const file=event.target.files?.[0];
     if(file){
-      try{state.profile.faceImage=await compressImage(file,600,.9);toast('얼굴 사진이 준비됐어요. 저장 버튼을 눌러주세요.');}
+      try{state.profile.faceImage=await compressImage(file,600,.9);identityPhotoChanged=true;toast('얼굴 사진이 준비됐어요. 저장 버튼을 눌러주세요.');}
       catch(error){console.error(error);toast('사진을 읽지 못했어요.');}
     }
   });
@@ -515,6 +574,7 @@ function bindMain(){
       if(!file)return;
       try{
         state.profile.bodyImages={...(state.profile.bodyImages||{}),[view]:await compressImage(file,1800,.88,true)};
+        if(view==='front')identityPhotoChanged=true;
         toast('전신 사진이 준비됐어요. 저장 버튼을 눌러주세요.');
       }catch(error){console.error(error);toast('전신 사진을 읽지 못했어요.');}
     });
@@ -525,8 +585,9 @@ function bindMain(){
     state.profile.height=Number($('#settings-height').value);
     state.profile.weight=Number($('#settings-weight').value);
     state.profile.closetName=$('#settings-name').value.trim()||'내일의 옷장';
+    if(identityPhotoChanged)state.profile.avatarImage=null;
     state.view='front';state.tryonResult=null;
-    await put('profile',state.profile);render();toast('인형 정보를 저장했어요.');
+    await put('profile',state.profile);render();toast(identityPhotoChanged?'사진을 저장했어요. 실사 아바타를 다시 생성해 주세요.':'인형 정보를 저장했어요.');
   });
   const stage=$('#stage');
   if(stage){

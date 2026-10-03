@@ -28,3 +28,11 @@
 .look-pieces img{width:38px;height:38px;object-fit:contain;background:#fffc;border:1px solid #e9a5c0;border-radius:7px}
 .look-unrendered{position:absolute;top:7px;right:7px;background:#fff9;border-radius:8px;padding:3px 6px;color:#9b6484;font-size:10px}
 .mini-look .look-pieces,.mini-look .look-unrendered{display:none}
+[hidden]{display:none!important}
+.consent-row{display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid #e9b4ca;border-radius:12px;background:#fff9fc;color:#795e70;font-size:13px;line-height:1.5}
+.consent-row input{flex:0 0 auto;margin-top:3px;accent-color:#dc4b8f}
+.avatar-result{padding:12px;border:1px solid #e9b4ca;border-radius:14px;background:white;text-align:center}
+.avatar-result img{display:block;max-height:360px;width:100%;object-fit:contain}
+.stage-panel{display:flex;flex-direction:column}
+.stage-area{height:auto;flex:1;padding-bottom:12px}
+.stage-foot{position:relative;left:auto;right:auto;bottom:auto;padding:8px 18px 16px}

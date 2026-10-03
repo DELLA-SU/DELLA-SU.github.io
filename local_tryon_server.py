@@ -18,6 +18,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from PIL import Image, UnidentifiedImageError
+from fashn_cloud import FashnError, create_avatar, try_on as cloud_try_on
 
 
 SITE_DIR = Path(__file__).resolve().parent
@@ -29,6 +30,7 @@ weights_dir = None
 device = "mps"
 avatar_python = None
 avatar_weights = None
+cloud_key = None
 
 
 def parse_image(value, mode="RGB"):
@@ -48,8 +50,21 @@ def parse_image(value, mode="RGB"):
         raise ValueError("사진 파일을 읽을 수 없어요.") from exc
 
 
+def image_data_uri(image, fmt="JPEG"):
+    output = io.BytesIO()
+    if fmt == "JPEG":
+        image.convert("RGB").save(output, format="JPEG", quality=92)
+        mime = "jpeg"
+    else:
+        image.save(output, format="PNG")
+        mime = "png"
+    return "data:image/" + mime + ";base64," + base64.b64encode(output.getvalue()).decode("ascii")
+
+
 def get_pipeline():
     global pipeline
+    if weights_dir is None:
+        raise ValueError("로컬 오픈소스 AI 가중치가 설정되지 않았어요.")
     if pipeline is None:
         from fashn_vton import TryOnPipeline
 
@@ -72,12 +87,12 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/api/health":
-            self.send_json(200, {"ready": weights_dir.is_dir(), "avatar_ready": avatar_python is not None and avatar_weights is not None, "device": device})
+            self.send_json(200, {"ready": bool(weights_dir and weights_dir.is_dir()), "avatar_ready": avatar_python is not None and avatar_weights is not None, "cloud_ready": bool(cloud_key), "device": device})
         else:
             super().do_GET()
 
     def do_POST(self):
-        if self.path not in {"/api/tryon", "/api/avatar"}:
+        if self.path not in {"/api/tryon", "/api/avatar", "/api/cloud-avatar", "/api/cloud-tryon"}:
             self.send_json(404, {"error": "찾을 수 없어요."})
             return
         if self.headers.get("Content-Type", "").split(";")[0].strip() != "application/json":
@@ -88,6 +103,22 @@ class Handler(SimpleHTTPRequestHandler):
             if length <= 0 or length > MAX_BODY:
                 raise ValueError("사진 크기가 너무 커요.")
             payload = json.loads(self.rfile.read(length))
+            if self.path in {"/api/cloud-avatar", "/api/cloud-tryon"}:
+                if not cloud_key:
+                    self.send_json(503, {"error": "FASHN_API_KEY가 로컬 서버에 설정되지 않았어요."})
+                    return
+                if payload.get("external_photo_consent") is not True:
+                    raise ValueError("외부 AI로 사진을 보내는 데 동의해야 해요.")
+                if self.path == "/api/cloud-avatar":
+                    face = image_data_uri(parse_image(payload.get("face_image")))
+                    body = image_data_uri(parse_image(payload.get("body_image")))
+                    image = create_avatar(cloud_key, face, body)
+                else:
+                    avatar = image_data_uri(parse_image(payload.get("avatar_image")))
+                    garment = image_data_uri(parse_image(payload.get("garment_image")))
+                    image = cloud_try_on(cloud_key, avatar, garment)
+                self.send_json(200, {"image": image})
+                return
             if self.path == "/api/avatar":
                 if avatar_python is None or avatar_weights is None:
                     self.send_json(503, {"error": "3D 모델이 로컬 서버에 연결되지 않았어요."})
@@ -133,6 +164,8 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_json(200, {"image": image_url})
         except (ValueError, json.JSONDecodeError) as exc:
             self.send_json(400, {"error": str(exc)})
+        except FashnError as exc:
+            self.send_json(502, {"error": str(exc)})
         except subprocess.TimeoutExpired:
             self.send_json(504, {"error": "3D 모델 생성 시간이 초과됐어요."})
         except subprocess.CalledProcessError as exc:
@@ -145,14 +178,15 @@ class Handler(SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run local virtual try-on experiment")
-    parser.add_argument("--weights-dir", required=True, type=Path)
+    parser.add_argument("--weights-dir", type=Path, help="Optional local FASHN VTON weights")
     parser.add_argument("--device", default="mps", choices=["mps", "cuda", "cpu"])
     parser.add_argument("--port", default=4319, type=int)
     parser.add_argument("--avatar-python", type=Path, help="Python executable with mlx-vlm and trimesh")
     parser.add_argument("--avatar-weights-dir", type=Path, help="Local SAM 3D Body MLX model directory")
     args = parser.parse_args()
-    weights_dir = args.weights_dir.resolve()
+    weights_dir = args.weights_dir.resolve() if args.weights_dir else None
     device = args.device
+    cloud_key = os.environ.get("FASHN_API_KEY", "").strip() or None
     if args.avatar_python or args.avatar_weights_dir:
         if not args.avatar_python or not args.avatar_weights_dir:
             parser.error("--avatar-python and --avatar-weights-dir must be used together")
@@ -161,8 +195,10 @@ if __name__ == "__main__":
         avatar_weights = args.avatar_weights_dir.resolve()
         if not avatar_python.is_file() or not avatar_weights.is_dir():
             parser.error("Avatar Python or weights directory not found")
-    if not weights_dir.is_dir():
+    if weights_dir is not None and not weights_dir.is_dir():
         parser.error(f"Weights not found: {weights_dir}")
+    if weights_dir is None and cloud_key is None and avatar_python is None:
+        parser.error("Set --weights-dir, FASHN_API_KEY, or avatar model options")
     os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     print(f"Local try-on experiment: http://127.0.0.1:{args.port}/", flush=True)
