@@ -92,7 +92,7 @@ function viewButtons(){
 
 function onboarding(){
   const draft={height:165,weight:55,skin:SKINS[0],hair:HAIRS[0],faceImage:null,bodyImages:{}};
-  app.innerHTML=shell('<section class="onboard"><div class="onboard-copy"><div class="eyebrow">STEP 01 / START HERE</div><h1>먼저, 나의<br>인형을 만들어요</h1><p>키와 몸무게, 정면 전신 사진으로 내 인형을 만들어요. 사진 속 실제 비율을 사용하고, 옷을 등록해 내일의 코디를 시작해요.</p><form id="onboard-form" class="card onboard-form form-stack"><div class="field-row"><div class="field"><label for="height">키 · cm</label><input id="height" name="height" type="number" inputmode="decimal" min="100" max="220" step="0.1" value="165" required></div><div class="field"><label for="weight">몸무게 · kg</label><input id="weight" name="weight" type="number" inputmode="decimal" min="25" max="250" step="0.1" value="55" required></div></div><div class="field"><label for="closet-name">내 옷장 이름</label><input id="closet-name" name="closetName" maxlength="30" value="내일의 옷장" required></div><div class="field"><label for="body-front">정면 전신 사진 · 필수</label><input id="body-front" type="file" accept="image/*" required><small>전신이 머리부터 발끝까지 보이는 사진을 사용해 주세요.</small></div><div class="field-row"><div class="field"><label for="body-side">측면 전신 · 선택</label><input id="body-side" type="file" accept="image/*"></div><div class="field"><label for="body-back">뒷면 전신 · 선택</label><input id="body-back" type="file" accept="image/*"></div></div><div class="field"><label for="face-photo">정면 얼굴 사진 · 선택</label><input id="face-photo" type="file" accept="image/*"><small>얼굴 사진은 이 브라우저에 저장됩니다. 현재 실사 화면에는 전신 사진만 표시돼요.</small></div><div class="create-row"><button class="primary" type="submit">나의 인형 만들기 →</button><span class="hint">입력값은 이 브라우저에 저장돼요.</span></div></form></div><div class="onboard-preview" id="onboard-preview">'+figureMarkup(draft,EMPTY_SLOTS,'onboard','front')+'<div class="sticker">MY<br>DOLL ♡</div></div></section>',true);
+  app.innerHTML=shell('<section class="onboard"><div class="onboard-copy"><div class="eyebrow">STEP 01 / START HERE</div><h1>먼저, 나의<br>인형을 만들어요</h1><p>키와 몸무게, 정면 전신 사진으로 내 인형을 만들어요. 사진 속 실제 비율을 사용하고, 옷을 등록해 내일의 코디를 시작해요.</p><form id="onboard-form" class="card onboard-form form-stack"><div class="field-row"><div class="field"><label for="height">키 · cm</label><input id="height" name="height" type="number" inputmode="decimal" min="100" max="220" step="0.1" value="165" required></div><div class="field"><label for="weight">몸무게 · kg</label><input id="weight" name="weight" type="number" inputmode="decimal" min="25" max="250" step="0.1" value="55" required></div></div><div class="field"><label for="closet-name">내 옷장 이름</label><input id="closet-name" name="closetName" maxlength="30" value="내일의 옷장" required></div><div class="field"><label for="body-front">정면 전신 사진 · 필수</label><input id="body-front" type="file" accept="image/*" required><small>머리부터 발끝까지 보이는 사진을 사용해 주세요. SNS 캡처의 검은 상·하단은 자동으로 제외해요.</small></div><div class="field-row"><div class="field"><label for="body-side">측면 전신 · 선택</label><input id="body-side" type="file" accept="image/*"></div><div class="field"><label for="body-back">뒷면 전신 · 선택</label><input id="body-back" type="file" accept="image/*"></div></div><div class="field"><label for="face-photo">정면 얼굴 사진 · 선택</label><input id="face-photo" type="file" accept="image/*"><small>얼굴 사진은 이 브라우저에 저장됩니다. 현재 실사 화면에는 전신 사진만 표시돼요.</small></div><div class="create-row"><button class="primary" type="submit">나의 인형 만들기 →</button><span class="hint">입력값은 이 브라우저에 저장돼요.</span></div></form></div><div class="onboard-preview" id="onboard-preview">'+figureMarkup(draft,EMPTY_SLOTS,'onboard','front')+'<div class="sticker">MY<br>DOLL ♡</div></div></section>',true);
   const update=()=>{
     draft.height=Number($('#height').value)||165;
     draft.weight=Number($('#weight').value)||55;
@@ -109,7 +109,7 @@ function onboarding(){
       const file=event.target.files?.[0];
       if(!file)return;
       try{
-        draft.bodyImages[view]=await compressImage(file,1800,.88);
+        draft.bodyImages[view]=await compressImage(file,1800,.88,true);
         update();
         toast(({front:'정면',side:'측면',back:'뒷면'}[view])+' 사진을 인형에 넣었어요.');
       }catch(error){console.error(error);toast('전신 사진을 읽지 못했어요.');}
@@ -120,7 +120,7 @@ function onboarding(){
     if(!event.target.reportValidity())return;
     const height=Number($('#height').value),weight=Number($('#weight').value);
     if(height<100||height>220||weight<25||weight>250){toast('키와 몸무게를 확인해 주세요.');return;}
-    if(!draft.bodyImages.front&&$('#body-front').files?.[0])draft.bodyImages.front=await compressImage($('#body-front').files[0],1800,.88);
+    if(!draft.bodyImages.front&&$('#body-front').files?.[0])draft.bodyImages.front=await compressImage($('#body-front').files[0],1800,.88,true);
     if(!draft.bodyImages.front){toast('정면 전신 사진을 먼저 넣어주세요.');return;}
     state.profile={id:'me',height,weight,skin:draft.skin,hair:draft.hair,faceImage:draft.faceImage,bodyImages:draft.bodyImages,closetName:$('#closet-name').value.trim()||'내일의 옷장',selection:{...EMPTY_SLOTS},createdAt:Date.now()};
     await put('profile',state.profile);
@@ -230,14 +230,46 @@ function openUpload(){
     }
   });
 }
-async function compressImage(file,maxSide=1200,quality=.86){
+function screenshotCrop(bitmap){
+  if(bitmap.height/bitmap.width<1.8)return null;
+  const probe=document.createElement('canvas');
+  probe.width=64;probe.height=Math.round(bitmap.height*64/bitmap.width);
+  const context=probe.getContext('2d',{willReadFrequently:true});
+  context.drawImage(bitmap,0,0,probe.width,probe.height);
+  const pixels=context.getImageData(0,0,probe.width,probe.height).data;
+  const darkRow=y=>{
+    let dark=0;
+    for(let x=0;x<probe.width;x++){
+      const i=(y*probe.width+x)*4;
+      if(Math.max(pixels[i],pixels[i+1],pixels[i+2])<50)dark++;
+    }
+    return dark/probe.width>.68;
+  };
+  let top=0,quiet=0;
+  for(let y=0;y<Math.round(probe.height*.18);y++){
+    if(darkRow(y)){top=y+1;quiet=0;}
+    else if(++quiet>=3)break;
+  }
+  let bottom=probe.height;quiet=0;
+  for(let y=probe.height-1;y>Math.round(probe.height*.65);y--){
+    if(darkRow(y)){bottom=y;quiet=0;}
+    else if(++quiet>=3)break;
+  }
+  if(top<probe.height*.025||probe.height-bottom<probe.height*.05||bottom-top<probe.height*.58)return null;
+  const sourceTop=Math.round((top+1)*bitmap.height/probe.height);
+  const sourceBottom=Math.round((bottom-1)*bitmap.height/probe.height);
+  return {x:0,y:sourceTop,width:bitmap.width,height:sourceBottom-sourceTop};
+}
+async function compressImage(file,maxSide=1200,quality=.86,autoTrim=false){
   if(!file.type.startsWith('image/'))throw Error('Not an image');
   const bitmap=await createImageBitmap(file);
-  const scale=Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));
-  const width=Math.max(1,Math.round(bitmap.width*scale)),height=Math.max(1,Math.round(bitmap.height*scale));
+  const crop=autoTrim?screenshotCrop(bitmap):null;
+  const source=crop||{x:0,y:0,width:bitmap.width,height:bitmap.height};
+  const scale=Math.min(1,maxSide/Math.max(source.width,source.height));
+  const width=Math.max(1,Math.round(source.width*scale)),height=Math.max(1,Math.round(source.height*scale));
   const canvas=document.createElement('canvas');
   canvas.width=width;canvas.height=height;
-  canvas.getContext('2d').drawImage(bitmap,0,0,width,height);
+  canvas.getContext('2d').drawImage(bitmap,source.x,source.y,source.width,source.height,0,0,width,height);
   bitmap.close();
   return canvas.toDataURL('image/webp',quality);
 }
@@ -482,7 +514,7 @@ function bindMain(){
       const file=event.target.files?.[0];
       if(!file)return;
       try{
-        state.profile.bodyImages={...(state.profile.bodyImages||{}),[view]:await compressImage(file,1800,.88)};
+        state.profile.bodyImages={...(state.profile.bodyImages||{}),[view]:await compressImage(file,1800,.88,true)};
         toast('전신 사진이 준비됐어요. 저장 버튼을 눌러주세요.');
       }catch(error){console.error(error);toast('전신 사진을 읽지 못했어요.');}
     });
