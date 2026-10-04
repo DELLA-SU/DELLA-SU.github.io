@@ -10,12 +10,11 @@ function uid() {
 }
 function dbOpen() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('my-closet-v1', 2);
+    const request = indexedDB.open('my-closet-v1');
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains('items')) db.createObjectStore('items', { keyPath: 'id' });
       if (!db.objectStoreNames.contains('looks')) db.createObjectStore('looks', { keyPath: 'id' });
-      if (!db.objectStoreNames.contains('renders')) db.createObjectStore('renders', { keyPath: 'id' });
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -56,10 +55,11 @@ function readFileAsDataURL(file) {
 }
 async function persistCurrent() {
   if (!state.db) return;
+  const store = state.db.objectStoreNames.contains('renders') ? 'renders' : 'looks';
   if (state.currentItemId && state.result) {
-    await dbRequest('renders', 'readwrite', 'put', { id: 'current', itemId: state.currentItemId, image: state.result });
+    await dbRequest(store, 'readwrite', 'put', { id: 'current', itemId: state.currentItemId, image: state.result });
   } else {
-    await dbRequest('renders', 'readwrite', 'delete', 'current');
+    await dbRequest(store, 'readwrite', 'delete', 'current');
   }
 }
 function renderResult() {
@@ -211,8 +211,9 @@ async function init() {
   try {
     state.db = await dbOpen();
     state.items = (await dbRequest('items', 'readonly', 'getAll')).sort((a, b) => b.createdAt - a.createdAt);
-    state.looks = (await dbRequest('looks', 'readonly', 'getAll')).sort((a, b) => b.createdAt - a.createdAt);
-    const current = await dbRequest('renders', 'readonly', 'get', 'current');
+    state.looks = (await dbRequest('looks', 'readonly', 'getAll')).filter(look => look.id !== 'current').sort((a, b) => b.createdAt - a.createdAt);
+    const currentStore = state.db.objectStoreNames.contains('renders') ? 'renders' : 'looks';
+    const current = await dbRequest(currentStore, 'readonly', 'get', 'current');
     if (current && itemById(current.itemId)) { state.currentItemId = current.itemId; state.result = current.image; }
   } catch (_) { showMessage('이 브라우저에서 저장소를 열 수 없어요.'); }
   renderResult(); drawWardrobe(); drawLooks(); checkServer();
