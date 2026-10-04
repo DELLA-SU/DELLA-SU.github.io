@@ -3,7 +3,59 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>새 옷장</title>
+  <meta name="theme-color" content="#f7f5f1">
+  <title>MY CLOSET — 온라인 옷장</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
 </head>
-<body></body>
+<body>
+  <main class="app-shell">
+    <header class="window-bar">
+      <div class="window-title"><span class="app-icon">✦</span><strong>MY CLOSET</strong><span class="window-extension">.exe</span><span class="window-subtitle">— 나만의 온라인 옷장</span></div>
+      <div class="window-controls" aria-hidden="true"><span>—</span><span>□</span><span>×</span></div>
+    </header>
+    <nav class="menu-bar" aria-label="주 메뉴">
+      <div class="menu-links"><button id="new-look" type="button"><u>F</u>ile</button><button id="open-closet" type="button"><u>W</u>ardrobe</button><button id="show-saved" type="button"><u>L</u>ooks</button><button id="show-help" type="button"><u>H</u>elp</button></div>
+      <span class="menu-status"><span class="status-light"></span> MY STYLE STUDIO <span class="status-number">01 / 01</span></span>
+    </nav>
+    <section class="workspace" aria-label="코디 작업 화면">
+      <aside class="tool-panel" aria-label="도구 모음">
+        <div class="tool-grid">
+          <button class="tool active" id="tool-move" type="button" title="옷 이동" aria-label="옷 이동">↖</button>
+          <button class="tool" id="tool-fit" type="button" title="선택한 옷 위치 초기화" aria-label="선택한 옷 위치 초기화">▧</button>
+          <button class="tool" id="tool-upload" type="button" title="옷 추가" aria-label="옷 추가">＋</button>
+          <button class="tool" id="tool-remove" type="button" title="선택한 옷 벗기" aria-label="선택한 옷 벗기">⌫</button>
+          <button class="tool" id="tool-save" type="button" title="코디 저장" aria-label="코디 저장">♡</button>
+          <button class="tool" id="tool-closet" type="button" title="옷장 보기" aria-label="옷장 보기">▦</button>
+        </div>
+        <div class="tool-separator"></div><p class="tool-caption">TOOLS</p>
+        <div class="palette" aria-label="장식용 색상 팔레트"><i style="--swatch:#252525"></i><i style="--swatch:#f9f8f5"></i><i style="--swatch:#9d7968"></i><i style="--swatch:#bcaaa4"></i><i style="--swatch:#b6c8d4"></i><i style="--swatch:#e8a7ae"></i><i style="--swatch:#d4bd74"></i><i style="--swatch:#a4ba9e"></i></div>
+        <div class="tool-sticker">dress<br>your<br>day! <span>✷</span></div>
+      </aside>
+      <section class="stage-panel" aria-label="캐릭터 입혀보기">
+        <div class="stage-top"><span>LOOK CANVAS <span class="tiny-star">✦</span></span><span id="look-date"></span></div>
+        <div class="stage-backdrop"><div class="stage-paper">
+          <span class="paper-corner top-left"></span><span class="paper-corner top-right"></span><span class="paper-corner bottom-left"></span><span class="paper-corner bottom-right"></span>
+          <div class="figure" id="figure" aria-label="고정 캐릭터와 선택한 옷"><img class="base-character" src="./assets/base-character.png" alt="검정 반바지와 회색 민소매를 입은 기본 캐릭터" draggable="false"><div id="garment-layers" class="garment-layers"></div></div>
+          <span class="canvas-sticker sticker-one">✧</span><span class="canvas-sticker sticker-two">♡</span>
+        </div></div>
+        <div class="stage-bottom"><span id="canvas-message">옷을 선택하면 캐릭터 위에 배치돼요.</span><div class="scale-control"><label for="scale-range">크기</label><input id="scale-range" type="range" min="55" max="180" value="100" disabled><output id="scale-output">100%</output></div></div>
+      </section>
+      <aside class="closet-panel" id="closet-panel" aria-label="내 옷장">
+        <div class="closet-heading"><div><span class="eyebrow">MY LITTLE WARDROBE</span><h1>오늘 뭐 입지<span>?</span></h1><p>내 옷을 꺼내 오늘의 코디를 만들어봐.</p></div><span class="heading-sparkle">✷</span></div>
+        <div class="closet-tabs" role="tablist" aria-label="옷 분류"><button type="button" class="tab active" data-category="all">전체</button><button type="button" class="tab" data-category="top">상의</button><button type="button" class="tab" data-category="outer">아우터</button><button type="button" class="tab" data-category="bottom">하의</button><button type="button" class="tab" data-category="shoes">신발</button><button type="button" class="tab" data-category="accessory">소품</button></div>
+        <div class="wardrobe-list" id="wardrobe-list"></div>
+        <button type="button" class="add-clothes" id="add-clothes"><span class="add-symbol">＋</span><span><strong>내 옷 추가하기</strong><small>옷 사진을 찍어 옷장에 넣어줘</small></span><span class="add-arrow">↗</span></button>
+        <div class="closet-footer"><span>✿</span> 사진은 지금 이 기기에만 저장돼요.</div>
+      </aside>
+    </section>
+    <footer class="status-bar"><span>ready to dress up <b>✦</b></span><span id="item-count">0 items</span><span>100%</span></footer>
+  </main>
+  <dialog id="upload-dialog" class="app-dialog"><form id="upload-form" method="dialog"><div class="dialog-header"><span>새 옷 넣기.exe</span><button type="button" class="close-dialog" data-close="upload-dialog" aria-label="닫기">×</button></div><div class="dialog-body"><p class="dialog-kicker">NEW ITEM ✦</p><h2>내 옷장에 추가하기</h2><p class="dialog-copy">옷 한 벌이 잘 보이는 사진을 골라줘. 단색 배경이라면 배경을 지우고 옷만 사용할 수 있어.</p><label class="file-drop" for="garment-file"><span>＋</span><strong>옷 사진 선택</strong><small>JPG, PNG, WEBP · 최대 12MB</small><input id="garment-file" name="garment-file" type="file" accept="image/png,image/jpeg,image/webp" required></label><div class="upload-preview" id="upload-preview" hidden><img id="preview-image" alt="선택한 옷 사진"><span id="preview-filename"></span></div><div class="form-row"><label>옷 이름<input id="garment-name" type="text" maxlength="32" placeholder="예: 내가 좋아하는 가디건" required></label><label>종류<select id="garment-category"><option value="top">상의</option><option value="outer">아우터</option><option value="bottom">하의</option><option value="shoes">신발</option><option value="accessory">소품</option></select></label></div><label class="check-row"><input id="remove-background" type="checkbox" checked><span>단색 배경 지우기 <small>복잡한 배경에서는 정확하지 않을 수 있어요.</small></span></label><p class="dialog-error" id="upload-error" role="alert"></p></div><div class="dialog-actions"><button type="button" class="secondary-button" data-close="upload-dialog">취소</button><button type="submit" class="primary-button" id="upload-submit">옷장에 넣기 ↗</button></div></form></dialog>
+  <dialog id="saved-dialog" class="app-dialog saved-dialog"><div class="dialog-header"><span>저장한 코디.exe</span><button type="button" class="close-dialog" data-close="saved-dialog" aria-label="닫기">×</button></div><div class="dialog-body"><p class="dialog-kicker">MY LOOKS ♡</p><h2>저장한 코디</h2><div id="saved-list" class="saved-list"></div></div><div class="dialog-actions"><button type="button" class="secondary-button" data-close="saved-dialog">닫기</button></div></dialog>
+  <dialog id="help-dialog" class="app-dialog"><div class="dialog-header"><span>사용 방법.exe</span><button type="button" class="close-dialog" data-close="help-dialog" aria-label="닫기">×</button></div><div class="dialog-body"><p class="dialog-kicker">HOW TO PLAY ✦</p><h2>옷장 사용법</h2><ol class="help-list"><li>내 옷 사진을 올리고 종류를 골라 저장해요.</li><li>옷장에서 사진을 누르면 캐릭터 위에 배치돼요.</li><li>옷을 드래그해 위치를 옮기고 아래에서 크기를 바꿔요.</li><li>마음에 드는 조합은 ♡ 버튼으로 저장해요.</li></ol><p class="help-note">현재 화면은 옷을 직접 배치하는 코디 실험판이에요. 자연스러운 주름·가림·체형에 맞는 AI 합성은 아직 연결되지 않았어요. 사진과 코디는 이 기기에만 저장됩니다.</p></div><div class="dialog-actions"><button type="button" class="primary-button" data-close="help-dialog">알겠어 ✦</button></div></dialog>
+  <dialog id="delete-dialog" class="app-dialog"><div class="dialog-header"><span>옷장 항목 삭제.exe</span><button type="button" class="close-dialog" data-close="delete-dialog" aria-label="닫기">×</button></div><div class="dialog-body"><p class="dialog-kicker">REMOVE ITEM</p><h2>이 옷을 삭제할까?</h2><p class="dialog-copy"><strong id="delete-item-name"></strong> 사진을 이 기기의 옷장에서 삭제합니다. 기본 캐릭터 이미지는 삭제되지 않아요.</p></div><div class="dialog-actions"><button type="button" class="secondary-button" data-close="delete-dialog">취소</button><button type="button" class="primary-button" id="confirm-delete">옷 사진 삭제</button></div></dialog>
+  <dialog id="save-dialog" class="app-dialog"><form id="save-form" method="dialog"><div class="dialog-header"><span>코디 저장.exe</span><button type="button" class="close-dialog" data-close="save-dialog" aria-label="닫기">×</button></div><div class="dialog-body"><p class="dialog-kicker">SAVE LOOK ♡</p><h2>코디 이름 짓기</h2><p class="dialog-copy">지금 캐릭터에 입힌 옷 조합을 저장해요.</p><label class="dialog-input-label">코디 이름<input id="look-name" type="text" maxlength="32" required></label></div><div class="dialog-actions"><button type="button" class="secondary-button" data-close="save-dialog">취소</button><button type="submit" class="primary-button">저장하기 ♡</button></div></form></dialog>
+  <dialog id="new-dialog" class="app-dialog"><div class="dialog-header"><span>새 코디.exe</span><button type="button" class="close-dialog" data-close="new-dialog" aria-label="닫기">×</button></div><div class="dialog-body"><p class="dialog-kicker">NEW LOOK ✦</p><h2>새 코디를 시작할까?</h2><p class="dialog-copy">현재 입힌 옷을 모두 벗깁니다. 저장한 코디와 옷장 사진은 그대로 남아요.</p></div><div class="dialog-actions"><button type="button" class="secondary-button" data-close="new-dialog">취소</button><button type="button" class="primary-button" id="confirm-new">새 코디 시작</button></div></dialog>
+</body>
 </html>
