@@ -3,7 +3,8 @@ const categoryNames = { top: '상의', outer: '아우터', bottom: '하의', sho
 const aiCategories = { top: 'tops', outer: 'tops', bottom: 'bottoms' };
 const state = { db: null, items: [], looks: [], currentItemId: null, result: null, busy: false, pendingDeleteId: null, filter: 'all' };
 const localApi = 'http://127.0.0.1:4319';
-const apiBase = location.hostname === '127.0.0.1' || location.hostname === 'localhost' ? location.origin : localApi;
+const isLocalSite = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
+const apiBase = isLocalSite ? location.origin : localApi;
 
 function uid() {
   return globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -39,7 +40,7 @@ async function checkServer() {
     badge.classList.toggle('offline', !status.available);
     return status.available;
   } catch (_) {
-    badge.textContent = 'AI 피팅 서버 꺼짐';
+    badge.textContent = isLocalSite ? 'AI 피팅 서버 꺼짐' : '이 화면에서 AI 연결 불가';
     badge.classList.add('offline');
     return false;
   }
@@ -106,11 +107,11 @@ async function tryOnItem(item) {
   if (!aiCategories[item.category]) { showMessage('신발과 소품 AI 피팅은 아직 지원하지 않아요.'); return; }
   if (state.busy) return;
   if (!await checkServer()) {
-    showMessage('AI 피팅 서버가 꺼져 있어요. 이 Mac에서 start-tryon.command를 실행한 뒤 다시 눌러주세요.');
+    showMessage(isLocalSite ? 'AI 피팅 서버가 꺼져 있어요. 이 Mac에서 start-tryon.command를 실행한 뒤 다시 눌러주세요.' : 'AI 피팅은 이 Mac에서 피팅 열기를 눌러 시험해 주세요. 서버도 켜져 있어야 해요.');
     return;
   }
   state.busy = true; renderResult(); drawWardrobe();
-  showMessage(`${item.name}을(를) AI로 입혀보는 중이에요. 이 Mac에서는 몇 분 걸릴 수 있어요.`);
+  showMessage(`${item.name}을(를) AI로 입혀보는 중이에요. 이 Mac에서는 약 10~15분 걸릴 수 있어요.`);
   try {
     const response = await fetch(`${apiBase}/api/try-on`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -208,6 +209,8 @@ function downloadResult() {
 }
 async function init() {
   $('#look-date').textContent = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  $('#local-link').hidden = isLocalSite;
+  if (!isLocalSite) showMessage('이 화면은 미리보기예요. AI 피팅은 오른쪽 링크에서 열어주세요.');
   try {
     state.db = await dbOpen();
     state.items = (await dbRequest('items', 'readonly', 'getAll')).sort((a, b) => b.createdAt - a.createdAt);
