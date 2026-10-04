@@ -57,6 +57,23 @@ function remove(store,id){
     tx.onerror=()=>reject(tx.error);
   });
 }
+async function deleteSavedPhotos(){
+  const profile={...state.profile,bodyImages:{},selection:{...EMPTY_SLOTS}};
+  delete profile.faceImage;
+  delete profile.avatarImage;
+  await new Promise((resolve,reject)=>{
+    const tx=db.transaction(STORES,'readwrite');
+    tx.objectStore('profile').put(profile);
+    for(const store of ['items','looks','plans'])tx.objectStore(store).clear();
+    tx.oncomplete=resolve;
+    tx.onerror=()=>reject(tx.error);
+  });
+  state.tryonResult=null;
+  state.view='front';
+  state.tab='studio';
+  await refresh();
+  toast('이 브라우저에 저장된 사진과 코디를 삭제했어요.');
+}
 async function refresh(){
   const [profiles,items,looks,plans]=await Promise.all(STORES.map(getAll));
   state.profile=profiles.find(p=>p.id==='me')||null;
@@ -83,7 +100,7 @@ function selection(){ return {...EMPTY_SLOTS,...(state.profile?.selection||{})};
 function figureMarkup(profile=state.profile,slots=selection(),prefix='figure',view=state.view,realisticImage=null){
   const photo=realisticImage||profile?.bodyImages?.[view];
   if(photo)return '<div class="real-photo"><img src="'+photo+'" alt="'+(realisticImage?'AI로 옷을 입힌 실사 이미지':'업로드한 '+({front:'정면',side:'측면',back:'뒷면'}[view]||'전신')+' 사진')+'"></div>';
-  return '<div class="real-photo sample-photo"><img src="./sample-fashion-model.png" alt="사진 업로드 전 보여주는 예시 패션 모델"><span class="sample-label">예시 모델 · 전신 사진을 넣으면 내 사진으로 바뀌어요</span></div>';
+  return '<div class="real-photo empty-photo" role="img" aria-label="전신 사진 없음"><span>전신 사진을 등록하면<br>여기에 표시돼요</span></div>';
 }
 function viewButtons(){
   if(!state.profile?.bodyImages?.front)return '';
@@ -137,7 +154,7 @@ function studio(){
   const controls=[
     ['accessories','소품'],['tops','상의'],['bottoms','하의'],['shoes','신발']
   ].map(([key,label])=>'<div class="cycle left '+key+'"><button type="button" data-action="cycle" data-category="'+key+'" data-dir="-1" aria-label="'+label+' 이전">‹</button><span>'+label+'</span></div><div class="cycle right '+key+'"><span>'+label+'</span><button type="button" data-action="cycle" data-category="'+key+'" data-dir="1" aria-label="'+label+' 다음">›</button></div>').join('');
-  return '<div class="page studio"><aside class="card side-panel"><div class="eyebrow">01 / MY CLOSET</div><h2>내 옷장</h2><p class="subhead">옷을 고른 뒤 실사 입혀보기를 누르면 내 사진에 합성돼요. PC에서는 끌어서 선택할 수도 있어요.</p><div class="filter-row">'+filterButtons()+'</div><div class="item-list">'+itemCards+'</div><div class="side-actions"><button class="primary" type="button" data-action="open-upload">＋ 옷 추가</button><button class="pill" type="button" data-tab="wardrobe">전체 보기</button></div></aside><section class="stage-panel" id="stage"><div class="stage-head"><div><div class="eyebrow">02 / DRESSING ROOM</div><h2>'+esc(state.profile.closetName)+'</h2></div>'+(state.profile.bodyImages?.front?viewButtons():'<span class="mono">EXAMPLE MODEL</span>')+'</div><div class="stage-area"><div class="stage-doll"><div class="floor"></div>'+figureMarkup(state.profile,slots,'main',state.view,state.view==='front'?state.tryonResult?.image:null)+'</div></div>'+controls+'<div class="stage-foot">' +(state.profile.bodyImages?.front?'<small>옷을 고른 뒤 실사 입혀보기를 눌러 합성해요.</small>':'<small>전신 사진을 올리면 내 사진으로 코디할 수 있어요.</small>')+ '<div class="stage-buttons"><button class="secondary" type="button" data-action="reset-look">다시 입히기</button>'+(state.profile.bodyImages?.front?'<button class="secondary" type="button" data-action="run-tryon">실사 입혀보기 ✦</button>':'')+'<button class="primary" type="button" data-action="save-look">이 코디 저장 ♡</button></div></div></section><aside class="info-panel"><div class="card"><div class="eyebrow">TODAYS LOOK</div><h3>'+((state.profile.bodyImages?.front&&!state.tryonResult)?'합성할 옷':'지금 입은 옷')+'</h3><div class="slot-list">'+slotRows+'</div></div><div class="card"><div class="eyebrow">NEXT STEP</div><h3>내일 입어볼까요?</h3><p>마음에 든 코디를 저장하고 달력에서 날짜를 골라두세요.</p><button class="secondary" type="button" data-tab="calendar">캘린더 보기 →</button></div><button class="feature-link" type="button" data-tab="settings">✦ 내 전신 사진과 기본 정보 수정하기 →</button></aside></div>';
+  return '<div class="page studio"><aside class="card side-panel"><div class="eyebrow">01 / MY CLOSET</div><h2>내 옷장</h2><p class="subhead">옷을 고른 뒤 실사 입혀보기를 누르면 내 사진에 합성돼요. PC에서는 끌어서 선택할 수도 있어요.</p><div class="filter-row">'+filterButtons()+'</div><div class="item-list">'+itemCards+'</div><div class="side-actions"><button class="primary" type="button" data-action="open-upload">＋ 옷 추가</button><button class="pill" type="button" data-tab="wardrobe">전체 보기</button></div></aside><section class="stage-panel" id="stage"><div class="stage-head"><div><div class="eyebrow">02 / DRESSING ROOM</div><h2>'+esc(state.profile.closetName)+'</h2></div>'+(state.profile.bodyImages?.front?viewButtons():'<span class="mono">사진 없음</span>')+'</div><div class="stage-area"><div class="stage-doll"><div class="floor"></div>'+figureMarkup(state.profile,slots,'main',state.view,state.view==='front'?state.tryonResult?.image:null)+'</div></div>'+controls+'<div class="stage-foot">' +(state.profile.bodyImages?.front?'<small>옷을 고른 뒤 실사 입혀보기를 눌러 합성해요.</small>':'<small>전신 사진을 올리면 내 사진으로 코디할 수 있어요.</small>')+ '<div class="stage-buttons"><button class="secondary" type="button" data-action="reset-look">다시 입히기</button>'+(state.profile.bodyImages?.front?'<button class="secondary" type="button" data-action="run-tryon">실사 입혀보기 ✦</button>':'')+'<button class="primary" type="button" data-action="save-look">이 코디 저장 ♡</button></div></div></section><aside class="info-panel"><div class="card"><div class="eyebrow">TODAYS LOOK</div><h3>'+((state.profile.bodyImages?.front&&!state.tryonResult)?'합성할 옷':'지금 입은 옷')+'</h3><div class="slot-list">'+slotRows+'</div></div><div class="card"><div class="eyebrow">NEXT STEP</div><h3>내일 입어볼까요?</h3><p>마음에 든 코디를 저장하고 달력에서 날짜를 골라두세요.</p><button class="secondary" type="button" data-tab="calendar">캘린더 보기 →</button></div><button class="feature-link" type="button" data-tab="settings">✦ 내 전신 사진과 기본 정보 수정하기 →</button></aside></div>';
 }
 function miniItem(item,selected=false){
   return '<div class="item-card '+(selected?'selected':'')+'" draggable="true" data-drag-id="'+item.id+'"><button class="item-remove" type="button" data-action="delete-item" data-id="'+item.id+'" aria-label="'+esc(item.name)+' 삭제">×</button><div class="item-thumb" data-action="wear" data-id="'+item.id+'"><img src="'+item.image+'" alt=""></div><div class="item-meta" data-action="wear" data-id="'+item.id+'"><span class="item-name">'+esc(item.name)+'</span><span class="item-kind">'+cat(item.category).label+'</span></div></div>';
@@ -155,9 +172,9 @@ function emptyPage(icon,title,copy,button,action){
 }
 function lookVisual(look,prefix){
   if(look.realisticImage)return '<img class="look-photo" src="'+look.realisticImage+'" alt="실사 코디 결과">';
-  const src=state.profile?.bodyImages?.front||'./sample-fashion-model.png';
+  const src=state.profile?.bodyImages?.front;
   const pieces=CATS.map(c=>slotItem(look.slots,c.id)).filter(Boolean);
-  return '<div class="look-composite"><img class="look-photo" src="'+src+'" alt="실사 합성 전 전신 사진"><div class="look-pieces">'+pieces.slice(0,3).map(item=>'<img src="'+item.image+'" alt="'+esc(item.name)+'">').join('')+'</div><span class="look-unrendered">합성 전 코디</span></div>';
+  return '<div class="look-composite">'+(src?'<img class="look-photo" src="'+src+'" alt="실사 합성 전 전신 사진">':'<div class="real-photo empty-photo"><span>전신 사진 없음</span></div>')+'<div class="look-pieces">'+pieces.slice(0,3).map(item=>'<img src="'+item.image+'" alt="'+esc(item.name)+'">').join('')+'</div><span class="look-unrendered">합성 전 코디</span></div>';
 }
 function looks(){
   return '<div class="page"><div class="page-head"><div><div class="eyebrow">LOOK BOOK / '+state.looks.length+' SAVED</div><h1 class="heading">코디 앨범</h1><p>마음에 든 조합을 모아두고 다시 입혀보세요.</p></div><button class="primary" type="button" data-tab="studio">새 코디 만들기</button></div>'+(state.looks.length?'<div class="look-grid">'+state.looks.map(look=>'<article class="look-card"><div class="look-visual">'+lookVisual(look,'look-'+look.id)+'</div><div class="look-card-body"><h3>'+esc(look.name)+'</h3><p>'+esc(look.album||'내 코디')+' · '+new Date(look.createdAt).toLocaleDateString('ko-KR')+'</p><div class="look-actions"><button class="tiny-btn" type="button" data-action="apply-look" data-id="'+look.id+'">코디 불러오기</button><button class="tiny-btn" type="button" data-action="plan-look" data-id="'+look.id+'">달력에 넣기</button><button class="tiny-btn" type="button" data-action="share-look" data-id="'+look.id+'">공유</button><button class="tiny-btn danger" type="button" data-action="delete-look" data-id="'+look.id+'">삭제</button></div></div></article>').join('')+'</div>':emptyPage('💌','아직 저장한 코디가 없어요','옷을 선택한 다음 “이 코디 저장”을 눌러보세요.','코디하러 가기','go-studio'))+'</div>';
@@ -178,7 +195,7 @@ function calendar(){
 }
 function settings(){
   const p=state.profile;
-  return '<div class="page"><div class="page-head"><div><div class="eyebrow">MY PHOTO / SETTINGS</div><h1 class="heading">내 사진 설정</h1><p>옷장 이름과 사진을 언제든 바꿀 수 있어요. 키와 몸무게는 기록용입니다.</p></div></div><div class="settings-grid"><section class="card settings-card"><h2>기본 정보</h2><form id="settings-form" class="form-stack"><div class="field"><label for="settings-name">옷장 이름</label><input id="settings-name" name="closetName" maxlength="30" value="'+esc(p.closetName)+'" required></div><div class="field-row"><div class="field"><label for="settings-height">키 · cm</label><input id="settings-height" name="height" type="number" min="100" max="220" step="0.1" value="'+p.height+'" required></div><div class="field"><label for="settings-weight">몸무게 · kg</label><input id="settings-weight" name="weight" type="number" min="25" max="250" step="0.1" value="'+p.weight+'" required></div></div><div class="field"><label for="settings-body-front">정면 전신 사진 · 실사 화면</label><input id="settings-body-front" type="file" accept="image/*"></div><div class="field-row"><div class="field"><label for="settings-body-side">측면 전신</label><input id="settings-body-side" type="file" accept="image/*"></div><div class="field"><label for="settings-body-back">뒷면 전신</label><input id="settings-body-back" type="file" accept="image/*"></div></div><button class="primary" type="submit">사진 정보 저장</button></form></section><section class="card settings-card"><h2>내 데이터</h2><p class="hint">현재 옷 사진과 코디는 이 브라우저에 저장됩니다. 다른 기기로 옮길 때는 백업 파일을 내보낸 뒤 다른 기기에서 가져오세요.</p><div class="setting-actions"><button class="secondary" type="button" data-action="export-data">백업 내보내기</button><button class="pill" type="button" data-action="import-data">백업 가져오기</button></div><p class="hint">자동으로 여러 기기에 동기화하려면 계정과 저장 서버 연결이 필요합니다.</p><hr style="border:0;border-top:1px solid #f0c6d6;margin:24px 0"><h2>실제 사진으로 입혀보기</h2><p class="hint">옷 사진과 전신 사진으로 실사 합성을 시험할 수 있어요. 로컬 오픈소스 AI 또는 별도로 연결한 FASHN AI를 선택할 수 있습니다.</p><button class="pill" type="button" data-action="open-tryon">실사 입혀보기 실험</button></section></div></div>';
+  return '<div class="page"><div class="page-head"><div><div class="eyebrow">MY PHOTO / SETTINGS</div><h1 class="heading">내 사진 설정</h1><p>옷장 이름과 사진을 언제든 바꿀 수 있어요. 키와 몸무게는 기록용입니다.</p></div></div><div class="settings-grid"><section class="card settings-card"><h2>기본 정보</h2><form id="settings-form" class="form-stack"><div class="field"><label for="settings-name">옷장 이름</label><input id="settings-name" name="closetName" maxlength="30" value="'+esc(p.closetName)+'" required></div><div class="field-row"><div class="field"><label for="settings-height">키 · cm</label><input id="settings-height" name="height" type="number" min="100" max="220" step="0.1" value="'+p.height+'" required></div><div class="field"><label for="settings-weight">몸무게 · kg</label><input id="settings-weight" name="weight" type="number" min="25" max="250" step="0.1" value="'+p.weight+'" required></div></div><div class="field"><label for="settings-body-front">정면 전신 사진 · 실사 화면</label><input id="settings-body-front" type="file" accept="image/*"></div><div class="field-row"><div class="field"><label for="settings-body-side">측면 전신</label><input id="settings-body-side" type="file" accept="image/*"></div><div class="field"><label for="settings-body-back">뒷면 전신</label><input id="settings-body-back" type="file" accept="image/*"></div></div><button class="primary" type="submit">사진 정보 저장</button></form></section><section class="card settings-card"><h2>내 데이터</h2><p class="hint">현재 옷 사진과 코디는 이 브라우저에 저장됩니다. 다른 기기로 옮길 때는 백업 파일을 내보낸 뒤 다른 기기에서 가져오세요.</p><div class="setting-actions"><button class="secondary" type="button" data-action="export-data">백업 내보내기</button><button class="pill" type="button" data-action="import-data">백업 가져오기</button></div><p class="hint">자동으로 여러 기기에 동기화하려면 계정과 저장 서버 연결이 필요합니다.</p><hr style="border:0;border-top:1px solid #f0c6d6;margin:24px 0"><h2>저장된 사진 삭제</h2><p class="hint">이 브라우저에 저장된 전신·얼굴·옷·합성 사진과 코디·달력 계획을 삭제합니다. 옷장 이름, 키, 몸무게는 유지합니다.</p><button class="danger" type="button" data-action="delete-saved-photos">저장된 사진 모두 삭제</button><hr style="border:0;border-top:1px solid #f0c6d6;margin:24px 0"><h2>실제 사진으로 입혀보기</h2><p class="hint">옷 사진과 전신 사진으로 실사 합성을 시험할 수 있어요. 로컬 오픈소스 AI 또는 별도로 연결한 FASHN AI를 선택할 수 있습니다.</p><button class="pill" type="button" data-action="open-tryon">실사 입혀보기 실험</button></section></div></div>';
 }
 function render(){
   if(!state.profile){onboarding();return;}
@@ -337,10 +354,12 @@ async function shareLook(id){
       ctx.fillStyle='#fff0f6';ctx.fillRect(0,0,900,1450);
       ctx.fillStyle='#663f70';ctx.font='bold 44px sans-serif';ctx.fillText(look.name,56,85,788);
       ctx.fillStyle='#ad688c';ctx.font='24px sans-serif';ctx.fillText('내일의 옷장 · 합성 전 코디',58,126);
-      const photo=new Image();photo.src=state.profile?.bodyImages?.front||'./sample-fashion-model.png';await photo.decode();
       ctx.fillStyle='#fff';ctx.fillRect(55,155,790,1060);
-      const scale=Math.min(760/photo.width,1020/photo.height);
-      ctx.drawImage(photo,450-photo.width*scale/2,175,photo.width*scale,photo.height*scale);
+      if(state.profile?.bodyImages?.front){
+        const photo=new Image();photo.src=state.profile.bodyImages.front;await photo.decode();
+        const scale=Math.min(760/photo.width,1020/photo.height);
+        ctx.drawImage(photo,450-photo.width*scale/2,175,photo.width*scale,photo.height*scale);
+      }
       const pieces=CATS.map(c=>slotItem(look.slots,c.id)).filter(Boolean).slice(0,4);
       for(let i=0;i<pieces.length;i++){
         const item=pieces[i],image=new Image();image.src=item.image;await image.decode();
@@ -504,6 +523,9 @@ function bindMain(){
     else if(action==='go-studio'){state.tab='studio';render();}
     else if(action==='export-data')exportData();
     else if(action==='import-data')importData();
+    else if(action==='delete-saved-photos'){
+      if(confirm('이 브라우저의 전신·얼굴·옷·합성 사진과 코디·달력 계획을 모두 삭제할까요?'))await deleteSavedPhotos();
+    }
     else if(action==='open-tryon')openTryon();
   };
   $('#search-items')?.addEventListener('input',event=>{
