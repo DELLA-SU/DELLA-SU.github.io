@@ -69,31 +69,9 @@ def generate(key, model_name, inputs, timeout=240):
     raise FashnError("이미지 생성 대기 시간이 초과됐어요.")
 
 
-def create_avatar(key, face_image, body_image):
-    # The body image guides composition and silhouette; this is a 2D image,
-    # not a measurement-accurate 3D scan.
-    return generate(key, "model-create", {
-        "prompt": (
-            "Photorealistic full-body front-facing fashion portrait of the same adult person "
-            "as the references. Preserve facial identity, hairstyle, skin tone, natural body "
-            "proportions and the full-body reference silhouette as closely as possible. "
-            "Standing straight, arms relaxed and separated from torso, legs visible to feet. "
-            "Wear a simple plain black sleeveless cropped tank top and plain black fitted "
-            "shorts, barefoot. Neutral clean studio background. No logos, no accessories."
-        ),
-        "image_reference": body_image,
-        "face_reference": face_image,
-        "face_reference_mode": "match_reference",
-        "aspect_ratio": "9:16",
-        "resolution": "2k",
-        "generation_mode": "balanced",
-        "output_format": "png",
-    })
-
-
-def try_on(key, avatar_image, garment_image):
+def try_on(key, person_image, garment_image):
     return generate(key, "tryon-max", {
-        "model_image": avatar_image,
+        "model_image": person_image,
         "product_image": garment_image,
         "resolution": "2k",
         "generation_mode": "balanced",
