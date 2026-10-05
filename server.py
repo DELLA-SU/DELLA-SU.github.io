@@ -136,6 +136,12 @@ class Handler(SimpleHTTPRequestHandler):
             category = request.get("category")
             if category not in ("tops", "bottoms", "one-pieces"):
                 raise ValueError("현재 이 종류의 옷은 입혀볼 수 없어요.")
+            garment_photo_type = request.get("garment_photo_type", "flat-lay")
+            if garment_photo_type not in ("flat-lay", "model"):
+                raise ValueError("옷 사진의 촬영 방식을 다시 선택해 주세요.")
+            seed = request.get("seed", 42)
+            if type(seed) is not int or not 0 <= seed <= 2**32 - 1:
+                raise ValueError("AI 피팅 설정이 잘못됐어요.")
             garment = read_image(request.get("garment"))
             person = Image.open(PERSON_IMAGE).convert("RGB")
             with pipeline_lock:
@@ -143,8 +149,9 @@ class Handler(SimpleHTTPRequestHandler):
                     person_image=person,
                     garment_image=garment,
                     category=category,
-                    garment_photo_type="flat-lay",
+                    garment_photo_type=garment_photo_type,
                     num_timesteps=30,
+                    seed=seed,
                 ).images[0]
             output = io.BytesIO()
             result.save(output, format="PNG")

@@ -103,7 +103,7 @@ function drawWardrobe() {
   }
   $('#item-count').textContent = `${state.items.length} items`;
 }
-async function tryOnItem(item) {
+async function tryOnItem(item, retry = false) {
   if (!aiCategories[item.category]) { showMessage('신발과 소품 AI 피팅은 아직 지원하지 않아요.'); return; }
   if (state.busy) return;
   if (!await checkServer()) {
@@ -111,11 +111,13 @@ async function tryOnItem(item) {
     return;
   }
   state.busy = true; renderResult(); drawWardrobe();
+  const makeVariation = retry || (state.currentItemId === item.id && Boolean(state.result));
+  const seed = makeVariation ? crypto.getRandomValues(new Uint32Array(1))[0] : 42;
   showMessage(`${item.name}을(를) AI로 입혀보는 중이에요. 이 Mac에서는 약 10~15분 걸릴 수 있어요.`);
   try {
     const response = await fetch(`${apiBase}/api/try-on`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ garment: item.original, category: aiCategories[item.category] }),
+      body: JSON.stringify({ garment: item.original, category: aiCategories[item.category], garment_photo_type: item.photoType || 'flat-lay', seed }),
     });
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
@@ -159,7 +161,7 @@ async function addGarment(event) {
   }
   submit.disabled = true; submit.textContent = '사진 저장 중…';
   try {
-    const item = { id: uid(), name: $('#garment-name').value.trim() || file.name.replace(/\.[^.]+$/, ''), category: $('#garment-category').value, original: await readFileAsDataURL(file), createdAt: Date.now() };
+    const item = { id: uid(), name: $('#garment-name').value.trim() || file.name.replace(/\.[^.]+$/, ''), category: $('#garment-category').value, photoType: $('#garment-photo-type').value, original: await readFileAsDataURL(file), createdAt: Date.now() };
     await dbRequest('items', 'readwrite', 'put', item); state.items.unshift(item);
     closeDialog('upload-dialog'); $('#upload-form').reset(); $('#upload-preview').hidden = true;
     drawWardrobe();
@@ -227,7 +229,7 @@ async function init() {
   $('#show-saved').addEventListener('click', () => openDialog('saved-dialog'));
   $('#show-help').addEventListener('click', () => openDialog('help-dialog'));
   $('#tool-save').addEventListener('click', saveLook);
-  $('#tool-move').addEventListener('click', () => { const item = itemById(state.currentItemId); if (item) tryOnItem(item); else showMessage('옷장에서 입힐 옷을 골라줘.'); });
+  $('#tool-move').addEventListener('click', () => { const item = itemById(state.currentItemId); if (item) tryOnItem(item, true); else showMessage('옷장에서 입힐 옷을 골라줘.'); });
   $('#tool-fit').addEventListener('click', downloadResult);
   $('#new-look').addEventListener('click', () => { if (state.result) openDialog('new-dialog'); else showMessage('옷을 골라 새 코디를 시작해봐.'); });
   $('#confirm-new').addEventListener('click', async () => { await clearCurrent(); closeDialog('new-dialog'); });
