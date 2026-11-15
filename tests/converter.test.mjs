@@ -1,0 +1,57 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import { createRequire } from 'node:module';
+const req=createRequire(import.meta.url);
+const {createCanvas,loadImage,DOMMatrix,ImageData,Path2D}=req('@napi-rs/canvas');
+const sharp=req('sharp');
+Object.assign(globalThis,{DOMMatrix,ImageData,Path2D});
+globalThis.document={createElement(tag){assert.equal(tag,'canvas');const c=createCanvas(1,1);c.toBlob=async(cb,type='image/png',q=.95)=>{try{cb(new Blob([await c.encode(type==='image/jpeg'?'jpeg':'png',Math.round(q*100))],{type}));}catch{cb(null);}};return c;}};
+globalThis.createImageBitmap=async b=>loadImage(Buffer.from(await b.arrayBuffer()));
+const {convertFiles,validateFiles,zipResults,inspectPDFs}=await import('../docs/converter.mjs');
+const {splitPlan}=await import('../docs/pdf-split.mjs');
+const {PDFDocument,rgb,degrees}=await import('../docs/vendor/pdf-lib.mjs');
+const {unzipSync}=await import('../docs/vendor/fflate.mjs');
+const folder=new URL('../work/web-tests/',import.meta.url);await fs.mkdir(folder,{recursive:true});
+function file(bytes,name,type){return new File([bytes],name,{type});}
+async function image(result){return sharp(Buffer.from(await result.blob.arrayBuffer())).raw().toBuffer({resolveWithObject:true});}
+const c=createCanvas(160,100),ctx=c.getContext('2d');ctx.fillStyle='#2b6de8';ctx.fillRect(10,10,140,80);
+const transparent=file(c.toBuffer('image/png'),'transparent.png','image/png');await fs.writeFile(new URL('transparent.png',folder),Buffer.from(await transparent.arrayBuffer()));
+const original=Buffer.from(await transparent.arrayBuffer());
+const jpg=(await convertFiles([transparent],'jpg'))[0];const decoded=await image(jpg);assert.equal(decoded.info.width,160);assert(decoded.data[0]>245&&decoded.data[1]>245&&decoded.data[2]>245,'JPEG transparent background is white');
+const png=(await convertFiles([file(await jpg.blob.arrayBuffer(),'photo.jpg','image/jpeg')],'png'))[0];assert.equal((await image(png)).info.width,160);
+const tiff=(await convertFiles([transparent],'tiff'))[0];const td=await image(tiff);assert.equal(td.info.width,160);assert.equal(td.info.channels,4);assert.equal(td.data[3],0);
+const pdf=(await convertFiles([transparent,transparent],'pdf'))[0];let doc=await PDFDocument.load(await pdf.blob.arrayBuffer());assert.equal(doc.getPageCount(),2);assert.equal(doc.getPage(0).getWidth(),120);
+const fixture=await PDFDocument.create();fixture.addPage([200,100]).drawRectangle({x:0,y:0,width:200,height:100,color:rgb(1,0,0)});fixture.addPage([300,150]).drawRectangle({x:0,y:0,width:300,height:150,color:rgb(0,0,1)});fixture.getPage(1).setRotation(degrees(90));
+const originalPdf=await fixture.save({useObjectStreams:false});const f=file(originalPdf,'pages.pdf','application/pdf');await fs.writeFile(new URL('pages.pdf',folder),originalPdf);
+const merged=(await convertFiles([f,file(await pdf.blob.arrayBuffer(),'images.pdf','application/pdf')],'merge'))[0];doc=await PDFDocument.load(await merged.blob.arrayBuffer());assert.equal(doc.getPageCount(),4);assert.equal(doc.getPage(1).getRotation().angle,90);
+const split=await convertFiles([f],'split');assert.equal(split.length,2);assert.equal((await PDFDocument.load(await split[1].blob.arrayBuffer())).getPage(0).getWidth(),300);
+const long=await PDFDocument.create();
+for(let i=0;i<200;i++){const page=long.addPage([400+i,600]);page.drawText(`Dropi test - Page ${i+1}`,{x:30,y:550,size:20});if(i%2)page.setRotation(degrees(90));}
+const longBytes=await long.save(), longFile=file(longBytes,'long-200.pdf','application/pdf');await fs.writeFile(new URL('long-200.pdf',folder),longBytes);
+assert.deepEqual(await inspectPDFs([longFile]),[{name:'long-200.pdf',pageCount:200}]);
+const groups=await convertFiles([longFile],'split',{splitMode:'parts',splitCount:7});assert.equal(groups.length,7);
+let sourcePage=0;
+for(const group of groups){const part=await PDFDocument.load(await group.blob.arrayBuffer());for(const page of part.getPages()){assert.equal(page.getWidth(),400+sourcePage);assert.equal(page.getRotation().angle,sourcePage%2?90:0);sourcePage++;}}
+assert.equal(sourcePage,200,'Every source page appears once and in order');
+assert.equal((await PDFDocument.load(await groups[0].blob.arrayBuffer())).getPageCount(),29);assert.equal((await PDFDocument.load(await groups[6].blob.arrayBuffer())).getPageCount(),28);
+const byPages=await convertFiles([longFile],'split',{splitMode:'pages',splitPages:60});assert.deepEqual(await Promise.all(byPages.map(async r=>(await PDFDocument.load(await r.blob.arrayBuffer())).getPageCount())),[60,60,60,20]);
+const longZip=unzipSync(new Uint8Array(await (await zipResults(groups)).arrayBuffer()));assert.equal(Object.keys(longZip).length,7);assert(Object.keys(longZip).includes('long-200_001-029.pdf'));
+assert.deepEqual(Buffer.from(await longFile.arrayBuffer()),Buffer.from(longBytes));
+for(const splitCount of [0,1,201,2.5,NaN])await assert.rejects(()=>convertFiles([longFile],'split',{splitMode:'parts',splitCount}),/개수/);
+assert.throws(()=>splitPlan(1),/1페이지/);assert.throws(()=>splitPlan(10,{splitMode:'pages',splitPages:10}),/페이지 수/);
+assert.deepEqual(splitPlan(10,{splitMode:'parts',splitCount:3}),[{start:1,end:4},{start:5,end:7},{start:8,end:10}]);
+const one=await PDFDocument.create();one.addPage();await assert.rejects(async()=>convertFiles([file(await one.save(),'single.pdf','application/pdf')],'split'),/1페이지/);
+const many=await PDFDocument.create();for(let i=0;i<201;i++)many.addPage();await assert.rejects(async()=>inspectPDFs([file(await many.save(),'over-limit.pdf','application/pdf')]),/200페이지/);
+const optimized=(await convertFiles([f],'compress-pdf',{keepResolution:true}))[0];assert(optimized.blob.size<=f.size);doc=await PDFDocument.load(await optimized.blob.arrayBuffer());assert.equal(doc.getPage(1).getRotation().angle,90);
+const extracted=await convertFiles([f],'extract');assert.equal(extracted.length,2);const e=await image(extracted[1]);assert.equal(e.info.width,300);assert.equal(e.info.height,600);assert(e.data[2]>245);
+const raster=(await convertFiles([f],'compress-pdf',{keepResolution:false,level:'small'}))[0];assert(raster.blob.size<=f.size);assert.equal((await PDFDocument.load(await raster.blob.arrayBuffer())).getPageCount(),2);
+const noise=createCanvas(800,600),nc=noise.getContext('2d'),pixels=nc.createImageData(800,600);let seed=7;for(let i=0;i<pixels.data.length;i+=4){seed=(Math.imul(seed,1664525)+1013904223)>>>0;pixels.data[i]=seed&255;pixels.data[i+1]=(seed>>>8)&255;pixels.data[i+2]=(seed>>>16)&255;pixels.data[i+3]=255;}nc.putImageData(pixels,0,0);
+const photo=file(noise.toBuffer('image/jpeg',99),'noise.jpg','image/jpeg');await fs.writeFile(new URL('noise.jpg',folder),Buffer.from(await photo.arrayBuffer()));
+const compressed=(await convertFiles([photo],'compress-image',{targetBytes:100000,keepResolution:true}))[0];assert(compressed.blob.size<=100000);assert.equal((await image(compressed)).info.width,800);
+const impossible=(await convertFiles([photo],'compress-image',{targetBytes:10}))[0];assert(impossible.missed);
+const zip=unzipSync(new Uint8Array(await (await zipResults(split)).arrayBuffer()));assert.equal(Object.keys(zip).length,2);assert.equal((await PDFDocument.load(Object.values(zip)[0])).getPageCount(),1);
+assert.deepEqual(Buffer.from(await transparent.arrayBuffer()),original);
+const abort=new AbortController();abort.abort();await assert.rejects(()=>convertFiles([f],'split',{signal:abort.signal}),e=>e.name==='AbortError');
+await assert.rejects(()=>convertFiles([file('bad','broken.pdf','application/pdf')],'split'),/PDF/);await assert.rejects(()=>convertFiles([file('bad','broken.png','image/png')],'jpg'),/이미지/);
+assert.throws(()=>validateFiles([transparent],'merge'),/PDF/);assert.throws(()=>validateFiles([f],'merge'),/2개/);
+console.log('PASS: image formats, alpha, PDF make/merge/order/render/optimization, 200-page split into parts/pages/individual files, complete page coverage and rotation, ZIP contents, invalid split counts and limits, target size, cancellation, original bytes.');

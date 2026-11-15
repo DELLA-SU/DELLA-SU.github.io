@@ -1,0 +1,10 @@
+{
+  "site": "https://della-su.github.io/",
+  "source_branch": "codex/dropi-review-pages",
+  "source_directory": "/docs",
+  "purpose": "Publish the public Dropi converter and help pages independently from local wardrobe experiments",
+  "preserved_main_commit": "b5eb020759f8c05d59a646e093de050256428903",
+  "dropi_source_commit": "a057e4baf436d7810ba0ed5e168556cc6950442a",
+  "publisher_id": "pub-8535212820330843",
+  "review_submission_changed": false
+}
